@@ -1,4 +1,4 @@
-namespace RExiled.Loader
+﻿namespace RExiled.Loader
 {
     using Exiled.API.Extensions;
     using RExiled.API.Extensions;
