@@ -4,6 +4,7 @@ using System.Reflection;
 
 namespace RExiled.API.Interfaces
 {
+    // Plugin 类接口类
     public interface IPlugin<out TConfig> : IComparable<IPlugin<IConfig>>
         where TConfig : IConfig
     {
