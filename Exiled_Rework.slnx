@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="RExiled.Bootstrap/RExiled.Bootstrap.csproj" Id="4eb35a3f-020c-4bb3-8cd4-50881e613716" />
+  <Project Path="RExiled.Events/RExiled.Events.csproj" Id="b84975c2-849d-4865-b1d5-1ad10916668c" />
+  <Project Path="RExiled.Loader/RExiled.Loader.csproj" Id="fbbe555e-f78f-49b2-9419-182ecc9eb878" />
+  <Project Path="RExiled.Patcher/RExiled.Patcher.csproj" />
+  <Project Path="RExiled_API/RExiled_API.csproj" Id="cda5a474-e349-4432-b97e-e85493781e46" />
+</Solution>
