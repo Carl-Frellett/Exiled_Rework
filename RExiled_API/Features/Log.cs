@@ -15,7 +15,9 @@ namespace RExiled.API.Features
 
         public static void Debug(string message)
         {
+#if Debug
             ServerConsole.AddLog($"[DEBUG] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE02");
+#endif
         }
 
         public static void Warn(string message)
