@@ -3,7 +3,7 @@ using System.Reflection;
 
 using LiteNetLib.Utils;
 
-namespace Exiled.API.Extensions
+namespace RExiled.API.Extensions
 {
     public static class Reflection
     {

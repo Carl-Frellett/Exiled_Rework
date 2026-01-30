@@ -1,6 +1,5 @@
 ﻿namespace RExiled.Loader
 {
-    using Exiled.API.Extensions;
     using RExiled.API.Extensions;
     using RExiled.API.Features;
     using RExiled.API.Interfaces;
