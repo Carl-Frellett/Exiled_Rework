@@ -74,10 +74,15 @@
     <Compile Include="Enums\PluginPriority.cs" />
     <Compile Include="Enums\Side.cs" />
     <Compile Include="Enums\ZoneType.cs" />
+    <Compile Include="Extensions\Reflection.cs" />
     <Compile Include="Extensions\String.cs" />
     <Compile Include="Features\Log.cs" />
+    <Compile Include="Features\Paths.cs" />
     <Compile Include="Features\Player.cs" />
     <Compile Include="Features\Plugin.cs" />
+    <Compile Include="Features\Round.cs" />
+    <Compile Include="Features\Server.cs" />
+    <Compile Include="Features\Warhead.cs" />
     <Compile Include="Interfaces\IConfig.cs" />
     <Compile Include="Interfaces\IPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

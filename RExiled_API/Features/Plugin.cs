@@ -4,7 +4,6 @@ using System.Reflection;
 using RExiled.API.Enums;
 using RExiled.API.Extensions;
 using RExiled.API.Interfaces;
-using RExiled_API.Features;
 
 namespace RExiled.API.Features
 {
@@ -35,11 +34,11 @@ namespace RExiled.API.Features
 
         public TConfig Config { get; } = new TConfig();
 
-        public virtual void OnEnabled() => Log.LogMessage($"{Name} v{Version.Major}.{Version.Minor}.{Version.Build}, made by {Author}, has been enabled!", false);
+        public virtual void OnEnabled() => Log.Info($"{Name} v{Version.Major}.{Version.Minor}.{Version.Build}, made by {Author}, has been enabled!");
 
-        public virtual void OnDisabled() => Log.LogMessage($"{Name} has been disabled!", false);
+        public virtual void OnDisabled() => Log.Info($"{Name} has been disabled!");
 
-        public virtual void OnReloaded() => Log.LogMessage($"{Name} has been reloaded!",false);
+        public virtual void OnReloaded() => Log.Info($"{Name} has been reloaded!");
 
         public int CompareTo(IPlugin<IConfig> other) => -Priority.CompareTo(other.Priority);
     }
