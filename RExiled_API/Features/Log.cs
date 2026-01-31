@@ -6,28 +6,28 @@ namespace RExiled.API.Features
     {
         public static void SendRaw(string message)
         {
-            ServerConsole.AddLog($"[Info] {message}");
+            ServerConsole.AddLog($"{message}");
         }
         public static void Info(string message)
         {
-            ServerConsole.AddLog($"[Info] [{Assembly.GetCallingAssembly().GetName().Name}] {message}");
+            ServerConsole.AddLog($"[Info] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE11");
         }
 
         public static void Debug(string message)
         {
 #if DEBUG
-            ServerConsole.AddLog($"[DEBUG] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE02");
+            ServerConsole.AddLog($"[DEBUG] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE6");
 #endif
         }
 
         public static void Warn(string message)
         {
-            ServerConsole.AddLog($"[Warning] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE14");
+            ServerConsole.AddLog($"[Warning] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE5");
         }
 
         public static void Error(string message)
         {
-            ServerConsole.AddLog($"[ERROR] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE-8");
+            ServerConsole.AddLog($"[ERROR] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE4");
         }
     }
 }

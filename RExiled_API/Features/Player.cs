@@ -69,11 +69,6 @@ namespace RExiled.API.Features
         public static IEnumerable<Player> List => Dictionary.Values;
 
         /// <summary>
-        /// 以玩家 UserId（通常是 SteamID 或临时 ID）为键的缓存字典。
-        /// </summary>
-        public static Dictionary<string, Player> UserIdsCache { get; } = new Dictionary<string, Player>();
-
-        /// <summary>
         /// 以玩家临时 Id（每局重置）为键的缓存字典。
         /// </summary>
         public static Dictionary<int, Player> IdsCache { get; } = new Dictionary<int, Player>();
@@ -106,6 +101,11 @@ namespace RExiled.API.Features
 
         #region 网络
         /// <summary>
+        /// 获取玩家是否为Host
+        /// </summary>
+        public bool IsHost => ReferenceHub.characterClassManager.IsHost;
+
+        /// <summary>
         /// 获取玩家的网络连接对象（仅适用于 SCP-079 角色）。
         /// </summary>
         public NetworkConnection Connection => ReferenceHub.scp079PlayerScript.connectionToClient;
@@ -123,11 +123,6 @@ namespace RExiled.API.Features
             get => ReferenceHub.queryProcessor.NetworkPlayerId;
             set => ReferenceHub.queryProcessor.NetworkPlayerId = value;
         }
-
-        /// <summary>
-        /// 获取玩家的 UserId。
-        /// </summary>
-        public string UserId => referenceHub.characterClassManager.UserId;
 
         /// <summary>
         /// 获取或设置玩家的昵称。
@@ -321,15 +316,6 @@ namespace RExiled.API.Features
                 else
                     ReferenceHub.characterClassManager.CallCmdRequestShowTag(false);
             }
-        }
-
-        /// <summary>
-        /// 获取或设置玩家的管理组
-        /// </summary>
-        public string GroupName
-        {
-            get => ServerStatic.PermissionsHandler._members.TryGetValue(UserId, out string groupName) ? groupName : null;
-            set => ServerStatic.PermissionsHandler._members[UserId] = value;
         }
 
         /// <summary>
@@ -724,9 +710,47 @@ namespace RExiled.API.Features
 
         #region 玩家获取
         /// <summary>
+        /// 通过昵称（模糊匹配）查找玩家。
+        /// </summary>
+        /// <param name="nickname">要查找的昵称（支持部分匹配）</param>
+        /// <returns>最匹配的 Player，未找到则返回 null</returns>
+        public static Player Get(string nickname)
+        {
+            if (string.IsNullOrEmpty(nickname))
+                return null;
+
+            Player bestMatch = null;
+            int maxNameLength = 31;
+            int minDistance = 31;
+            string inputLower = nickname.ToLower();
+
+            foreach (Player player in List)
+            {
+                if (!player.Nickname.Contains(nickname, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string paddedInput = inputLower;
+                string paddedNick = player.Nickname.ToLower();
+
+                if (paddedInput.Length < maxNameLength)
+                    paddedInput = paddedInput.PadRight(maxNameLength, 'z');
+                if (paddedNick.Length < maxNameLength)
+                    paddedNick = paddedNick.PadRight(maxNameLength, 'z');
+
+                int distance = paddedInput.GetDistance(paddedNick);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    bestMatch = player;
+                }
+            }
+
+            return bestMatch;
+        }
+
+        /// <summary>
         /// 通过<see cref="global::ReferenceHub"/>获取玩家类。
         /// </summary>
-        /// <param name="referenceHub"></param>
         /// <returns></returns>
         public static Player Get(ReferenceHub referenceHub) => referenceHub == null ? null : Get(referenceHub.gameObject);
 

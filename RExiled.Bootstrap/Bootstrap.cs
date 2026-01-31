@@ -12,7 +12,7 @@
         {
             if (IsLoaded)
             {
-                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled has already been loaded!");
+                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled has already been loaded! LOGTYPE2");
                 return;
             }
 
@@ -53,22 +53,22 @@
                         }
                         else
                         {
-                            ServerConsole.AddLog($"[RExiled.Bootstrap] YamlDotNet.dll was not found, RExiled won't be loaded! LOGTYPE-8");
+                            ServerConsole.AddLog($"[RExiled.Bootstrap] YamlDotNet.dll was not found, RExiled won't be loaded! LOGTYPE4");
                         }
                     }
                     else
                     {
-                        ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.API.dll was not found, RExiled won't be loaded! LOGTYPE-8");
+                        ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.API.dll was not found, RExiled won't be loaded! LOGTYPE4");
                     }
                 }
                 else
                 {
-                    ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.Loader.dll was not found, RExiled won't be loaded! LOGTYPE-8");
+                    ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.Loader.dll was not found, RExiled won't be loaded! LOGTYPE4");
                 }
             }
             catch (Exception exception)
             {
-                ServerConsole.AddLog($"[RExiled.Bootstrap] Exiled loading error: {exception} LOGTYPE-8");
+                ServerConsole.AddLog($"[RExiled.Bootstrap] Exiled loading error: {exception} LOGTYPE4");
             }
         }
     }

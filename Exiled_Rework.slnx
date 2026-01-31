@@ -15,4 +15,7 @@
   <Project Path="RExiled_API/RExiled.API.csproj" Id="cda5a474-e349-4432-b97e-e85493781e46">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Project Path="RExiled_TestPlugin/RExiled_TestPlugin.csproj" Id="67572067-329d-451d-a2e4-72ffd92d42ee">
+    <Platform Solution="Release|x64" Project="x64" />
+  </Project>
 </Solution>

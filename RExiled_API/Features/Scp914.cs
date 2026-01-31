@@ -8,7 +8,7 @@ using UnityEngine;
 
 using Utils.ConfigHandler;
 
-namespace Exiled.API.Features
+namespace RExiled.API.Features
 {
     public static class Scp914
     {
