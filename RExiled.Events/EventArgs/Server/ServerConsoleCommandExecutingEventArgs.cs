@@ -2,6 +2,9 @@
 
 namespace RExiled.Events.EventArgs.Server
 {
+    /// <summary>
+    /// 服务器控制台执行命令触发的事件
+    /// </summary>
     public class ServerConsoleCommandExecutingEventArgs : System.EventArgs
     {
         public ServerConsoleCommandExecutingEventArgs(string command, bool encrypted, bool isAllowed)

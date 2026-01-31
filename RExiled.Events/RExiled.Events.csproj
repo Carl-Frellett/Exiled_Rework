@@ -119,6 +119,9 @@
     <Compile Include="Events.cs" />
     <Compile Include="Patches\Events\Player\PlayerConsoleCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\RemoteAdminCommandPatch.cs" />
+    <Compile Include="Patches\Events\Server\RoundEndedPatch.cs" />
+    <Compile Include="Patches\Events\Server\RoundRestartedPatch.cs" />
+    <Compile Include="Patches\Events\Server\RoundStartedPatch.cs" />
     <Compile Include="Patches\Events\Server\ServerConsoleCommandPatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

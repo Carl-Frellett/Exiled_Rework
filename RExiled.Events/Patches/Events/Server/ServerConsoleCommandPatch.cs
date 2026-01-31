@@ -2,7 +2,7 @@
 using RemoteAdmin;
 using RExiled.Events.EventArgs.Server;
 
-namespace RExiled.Events.Patches
+namespace RExiled.Events.Patches.Server
 {
     [HarmonyPatch(typeof(QueryProcessor), nameof(QueryProcessor.ProcessGameConsoleQuery))]
     internal class ServerConsoleCommandPatch

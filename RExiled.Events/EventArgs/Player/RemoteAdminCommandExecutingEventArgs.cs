@@ -3,6 +3,9 @@ using RExiled.API.Features;
 
 namespace RExiled.Events.EventArgs.Player
 {
+    /// <summary>
+    /// 玩家在管理员面板执行命令时触发的事件
+    /// </summary>
     public class RemoteAdminCommandExecutingEventArgs : System.EventArgs
     {
         public RemoteAdminCommandExecutingEventArgs(RExiled.API.Features.Player player, string command, bool isAllowed)
