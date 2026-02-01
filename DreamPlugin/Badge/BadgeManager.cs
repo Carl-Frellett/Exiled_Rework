@@ -83,11 +83,9 @@ namespace DreamPlugin.Badge
         {
             try
             {
-                // 保存前过滤掉已过期的账号
                 var validBadges = badges.Values.Where(b => !b.IsExpired()).ToList();
                 string json = JsonConvert.SerializeObject(validBadges, Formatting.Indented);
 
-                // 确保目录存在
                 string directory = Path.GetDirectoryName(dataPath);
                 if (!Directory.Exists(directory))
                 {
@@ -109,7 +107,6 @@ namespace DreamPlugin.Badge
 
             if (isUpdate)
             {
-                // 更新现有账号
                 var existingBadge = badges[account];
                 existingBadge.Password = password;
                 existingBadge.BadgeType = type;
@@ -122,7 +119,6 @@ namespace DreamPlugin.Badge
             }
             else
             {
-                // 创建新账号
                 var newBadge = new BadgeAccount
                 {
                     Account = account,
@@ -158,7 +154,6 @@ namespace DreamPlugin.Badge
             if (!badges.TryGetValue(account, out var badge) || badge.Password != password)
                 return null;
 
-            // 检查账号是否过期
             if (badge.IsExpired())
             {
                 Log.Info($"称号账号 {account} 已过期，自动删除");
@@ -167,7 +162,6 @@ namespace DreamPlugin.Badge
                 return null;
             }
 
-            // 移除玩家现有的称号效果（如果已登录）
             if (playerSessions.ContainsKey(player))
             {
                 RemoveBadge(player);
@@ -183,7 +177,6 @@ namespace DreamPlugin.Badge
             playerSessions[player] = session;
             ApplyBadge(player, badge);
 
-            // 更新最后使用时间
             badge.LastUpdateTime = DateTime.Now;
             SaveBadges();
 
@@ -200,7 +193,6 @@ namespace DreamPlugin.Badge
             return playerSessions.TryGetValue(player, out var session) ? session.CurrentBadge : null;
         }
 
-        // 新增方法：直接应用称号，不经过控制器
         public void ApplyBadgeDirectly(Player player, BadgeAccount badge)
         {
             if (badge == null) return;

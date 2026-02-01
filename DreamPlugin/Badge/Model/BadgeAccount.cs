@@ -30,7 +30,7 @@ namespace DreamPlugin.Badge.Model
         };
 
         [JsonProperty("expirationMonths")]
-        public int ExpirationMonths { get; set; } = 0; // 0表示永久
+        public int ExpirationMonths { get; set; } = 0;
 
         [JsonProperty("createTime")]
         public DateTime CreateTime { get; set; } = DateTime.Now;
@@ -38,12 +38,10 @@ namespace DreamPlugin.Badge.Model
         [JsonProperty("lastUpdateTime")]
         public DateTime LastUpdateTime { get; set; } = DateTime.Now;
 
-        // 检查是否过期
         public bool IsExpired()
         {
-            if (ExpirationMonths == 0) return false; // 永久不过期
+            if (ExpirationMonths == 0) return false;
 
-            // 如果创建时间是默认值，说明是旧数据，设为永久
             if (CreateTime == default(DateTime))
             {
                 CreateTime = DateTime.Now;
@@ -54,12 +52,10 @@ namespace DreamPlugin.Badge.Model
             return DateTime.Now > CreateTime.AddMonths(ExpirationMonths);
         }
 
-        // 获取过期时间
         public DateTime GetExpirationDate()
         {
             if (ExpirationMonths == 0) return DateTime.MaxValue;
 
-            // 如果创建时间是默认值，说明是旧数据，设为永久
             if (CreateTime == default(DateTime))
             {
                 CreateTime = DateTime.Now;

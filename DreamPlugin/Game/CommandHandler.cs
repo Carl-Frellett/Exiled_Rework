@@ -65,6 +65,12 @@ namespace DreamPlugin.Game
                 return;
             }
 
+            if (cmd.StartsWith("killme") || cmd.StartsWith("kl") || cmd.StartsWith("自杀"))
+            {
+                ev.Player.Kill();
+                return;
+            }
+
             if (cmd.StartsWith("clean ") || cmd.StartsWith("cl "))
             {
                 if (!ev.Player.RemoteAdminAccess)
@@ -144,7 +150,6 @@ namespace DreamPlugin.Game
                     break;
 
                 default:
-                    // 尝试直接登录：bag <账号> <密码>
                     if (args.Length >= 3)
                     {
                         HandleLogin(player, args[1], args[2]);
@@ -265,9 +270,6 @@ namespace DreamPlugin.Game
             player.SendConsoleMessage($"账号 {account} 的状态: {info}", "white");
         }
 
-        /// <summary>
-        /// 立即清理所有尸体（Ragdoll）
-        /// </summary>
         private void CleanCorpsesNow()
         {
             try
@@ -298,9 +300,6 @@ namespace DreamPlugin.Game
             }
         }
 
-        /// <summary>
-        /// 立即清理所有地面物品（Pickup）
-        /// </summary>
         private void CleanItemsNow()
         {
             try

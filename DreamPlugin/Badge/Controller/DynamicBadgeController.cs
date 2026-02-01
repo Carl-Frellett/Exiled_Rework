@@ -115,9 +115,8 @@ namespace DreamPlugin.Badge.Controller
             }
             else
             {
-                // 所有字符已显示，进入完整显示阶段
                 isCompleteCycle = true;
-                player.RankName = fullContent; // 显示完整内容，无下划线
+                player.RankName = fullContent;
             }
         }
 

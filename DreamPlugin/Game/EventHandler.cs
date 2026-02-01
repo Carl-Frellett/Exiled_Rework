@@ -38,20 +38,17 @@ namespace DreamPlugin.Game
             PendingGiveItems.Clear();
         }
 
-        #region 清理系统（尸体 & 物品）
+        #region 清理
         private bool _isRoundActive = false;
         private float _corpseTimer = 0f;
         private float _itemTimer = 0f;
-        private const float CORPSE_CLEAN_INTERVAL = 240f; // 4分钟 = 240秒
-        private const float ITEM_CLEAN_INTERVAL = 900f;   // 15分钟 = 900秒
+        private const float CORPSE_CLEAN_INTERVAL = 240f;
+        private const float ITEM_CLEAN_INTERVAL = 900f;
         private CoroutineHandle _cleanupUpdateCoroutine;
 
-        /// <summary>
-        /// 回合开始时启动清理系统
-        /// </summary>
         private void StartCleanup()
         {
-            StopCleanup(); // 确保先停止旧的协程
+            StopCleanup(); 
             _isRoundActive = true;
             _corpseTimer = 0f;
             _itemTimer = 0f;
@@ -59,9 +56,6 @@ namespace DreamPlugin.Game
             Log.Info("[清理系统] 回合开始，启动清理计时器");
         }
 
-        /// <summary>
-        /// 回合结束或重启时停止并重置清理系统
-        /// </summary>
         private void StopCleanup()
         {
             if (_cleanupUpdateCoroutine.IsRunning)
@@ -74,9 +68,6 @@ namespace DreamPlugin.Game
             Log.Info("[清理系统] 回合结束，清理计时器已重置");
         }
 
-        /// <summary>
-        /// 每帧精确更新清理计时器
-        /// </summary>
         private IEnumerator<float> CleanupUpdateRoutine()
         {
             while (_isRoundActive)
@@ -87,27 +78,21 @@ namespace DreamPlugin.Game
 
                 float deltaTime = Time.deltaTime;
 
-                // 尸体清理（每4分钟）
                 _corpseTimer += deltaTime;
                 if (_corpseTimer >= CORPSE_CLEAN_INTERVAL)
                 {
                     CleanCorpsesNow();
-                    _corpseTimer = 0f; // 重置计时器，保证下次准时
+                    _corpseTimer = 0f;
                 }
 
-                // 物品清理（每15分钟）
                 _itemTimer += deltaTime;
                 if (_itemTimer >= ITEM_CLEAN_INTERVAL)
                 {
                     CleanItemsNow();
-                    _itemTimer = 0f; // 重置计时器，保证下次准时
+                    _itemTimer = 0f;
                 }
             }
         }
-
-        /// <summary>
-        /// 立即清理所有尸体（Ragdoll）
-        /// </summary>
         private void CleanCorpsesNow()
         {
             try
@@ -134,9 +119,6 @@ namespace DreamPlugin.Game
             }
         }
 
-        /// <summary>
-        /// 立即清理所有地面物品（Pickup）
-        /// </summary>
         private void CleanItemsNow()
         {
             try
@@ -164,10 +146,7 @@ namespace DreamPlugin.Game
         }
         #endregion
 
-        #region 回合事件绑定
-        // 在你的事件注册方法中（如 RegisterEvents），确保绑定：
-        // Exiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
-        // Exiled.Events.Handlers.Server.RestartingRound += OnRoundRestarting;
+        #region 回合事件
 
         private void OnRoundStarted()
         {
@@ -182,8 +161,22 @@ namespace DreamPlugin.Game
 
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
-            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*鸟之诗.梦时镜怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>",true);
-            ev.Player.RankName = "_";
+            HashSet<int> usedIds = new HashSet<int>();
+            foreach (var player in Player.List)
+            {
+                usedIds.Add(player.Id);
+            }
+
+            int newId = 2;
+            while (usedIds.Contains(newId))
+            {
+                newId++;
+            }
+
+            ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
+
+            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*鸟之诗.梦时镜怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>", true);
+
             ev.Player.RankName = string.Empty;
             Timing.CallDelayed(0.2f, () =>
             {
@@ -280,10 +273,11 @@ namespace DreamPlugin.Game
                         if (Vector3.Distance(player.Position, LastPos[player]) < 0.1f)
                         {
                             KeepPosTime[player] += 1f;
+
                             if (KeepPosTime[player] > 5 && player.Health < player.MaxHealth)
                             {
-                                player.Health += 3;
-                                player.Health = Mathf.Min(player.Health, player.MaxHealth);
+                                float healAmount = player.Role == RoleType.Scp106 ? 1f : 3f;
+                                player.Health = Mathf.Min(player.Health + healAmount, player.MaxHealth);
                             }
                         }
                         else

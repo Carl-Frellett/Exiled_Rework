@@ -51,21 +51,17 @@ namespace DreamPlugin.Badge.Controller
         {
             StopAllCoroutines();
 
-            // 只有当玩家仍然存在且当前控制器仍然有效时才重置颜色
             if (player != null && player.GameObject != null)
             {
-                // 检查玩家是否仍然登录了称号
                 var badgeManager = Plugin.plugin.BadgeManager;
                 var currentBadge = badgeManager.GetPlayerBadge(player);
 
                 if (currentBadge == null || currentBadge.BadgeType == BadgeType.Rainbow)
                 {
-                    // 如果玩家没有登录或者登录的是彩虹称号，才重置
                     player.RankColor = "default";
                 }
                 else
                 {
-                    // 如果玩家登录的是其他类型称号，重新应用正确的颜色
                     badgeManager.ApplyBadgeDirectly(player, currentBadge);
                 }
             }
