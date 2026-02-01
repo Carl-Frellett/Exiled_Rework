@@ -23,7 +23,7 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.ChangedRole += OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
-            RExiled.Events.Handlers.Server.RoundRestarted += RoundRestarted;
+            RExiled.Events.Handlers.Server.RoundRestarted += OnRoundRestarting;
 
             SCPHealthCoroutine = Timing.RunCoroutine(SCPHealth());
         }
@@ -33,110 +33,153 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.ChangedRole -= OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
-            RExiled.Events.Handlers.Server.RoundRestarted -= RoundRestarted;
+            RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundRestarting;
 
             PendingGiveItems.Clear();
         }
 
         #region 清理系统（尸体 & 物品）
+        private bool _isRoundActive = false;
+        private float _corpseTimer = 0f;
+        private float _itemTimer = 0f;
+        private const float CORPSE_CLEAN_INTERVAL = 240f; // 4分钟 = 240秒
+        private const float ITEM_CLEAN_INTERVAL = 900f;   // 15分钟 = 900秒
+        private CoroutineHandle _cleanupUpdateCoroutine;
 
-        private CoroutineHandle _corpseCoroutine;
-        private CoroutineHandle _itemCoroutine;
-
+        /// <summary>
+        /// 回合开始时启动清理系统
+        /// </summary>
         private void StartCleanup()
         {
-            StopCleanup();
-
-            _corpseCoroutine = Timing.RunCoroutine(CleanCorpsesRoutine(), Segment.Update);
-            _itemCoroutine = Timing.RunCoroutine(CleanItemsRoutine(), Segment.Update);
+            StopCleanup(); // 确保先停止旧的协程
+            _isRoundActive = true;
+            _corpseTimer = 0f;
+            _itemTimer = 0f;
+            _cleanupUpdateCoroutine = Timing.RunCoroutine(CleanupUpdateRoutine(), Segment.LateUpdate);
+            Log.Info("[清理系统] 回合开始，启动清理计时器");
         }
 
+        /// <summary>
+        /// 回合结束或重启时停止并重置清理系统
+        /// </summary>
         private void StopCleanup()
         {
-            if (_corpseCoroutine.IsRunning) Timing.KillCoroutines(_corpseCoroutine);
-            if (_itemCoroutine.IsRunning) Timing.KillCoroutines(_itemCoroutine);
+            if (_cleanupUpdateCoroutine.IsRunning)
+            {
+                Timing.KillCoroutines(_cleanupUpdateCoroutine);
+            }
+            _isRoundActive = false;
+            _corpseTimer = 0f;
+            _itemTimer = 0f;
+            Log.Info("[清理系统] 回合结束，清理计时器已重置");
         }
 
-        private IEnumerator<float> CleanCorpsesRoutine()
+        /// <summary>
+        /// 每帧精确更新清理计时器
+        /// </summary>
+        private IEnumerator<float> CleanupUpdateRoutine()
         {
-            while (true)
+            while (_isRoundActive)
             {
-                yield return Timing.WaitForSeconds(240f);
+                yield return Timing.WaitForOneFrame;
 
-                if (!Round.IsStarted) break;
+                if (!_isRoundActive) yield break;
 
-                try
+                float deltaTime = Time.deltaTime;
+
+                // 尸体清理（每4分钟）
+                _corpseTimer += deltaTime;
+                if (_corpseTimer >= CORPSE_CLEAN_INTERVAL)
                 {
-                    var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
-                    int count = 0;
-                    foreach (var ragdoll in ragdolls)
-                    {
-                        if (ragdoll != null && ragdoll.gameObject != null)
-                        {
-                            NetworkServer.Destroy(ragdoll.gameObject);
-                            count++;
-                        }
-                    }
-                    if (count > 0)
-                    {
-                        Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 具尸体</size>");
-                        Log.Info($"[清理系统] 已清理 {count} 具尸体");
-                    }
+                    CleanCorpsesNow();
+                    _corpseTimer = 0f; // 重置计时器，保证下次准时
                 }
-                catch (System.Exception ex)
+
+                // 物品清理（每15分钟）
+                _itemTimer += deltaTime;
+                if (_itemTimer >= ITEM_CLEAN_INTERVAL)
                 {
-                    Log.Error($"[清理系统] 清理尸体时出错: {ex}");
+                    CleanItemsNow();
+                    _itemTimer = 0f; // 重置计时器，保证下次准时
                 }
             }
         }
 
-        private IEnumerator<float> CleanItemsRoutine()
+        /// <summary>
+        /// 立即清理所有尸体（Ragdoll）
+        /// </summary>
+        private void CleanCorpsesNow()
         {
-            while (true)
+            try
             {
-                yield return Timing.WaitForSeconds(900f);
-
-                if (!Round.IsStarted) break;
-
-                try
+                var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
+                int count = 0;
+                foreach (var ragdoll in ragdolls)
                 {
-                    var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
-                    int count = 0;
-                    foreach (var pickup in pickups)
+                    if (ragdoll != null && ragdoll.gameObject != null)
                     {
-                        if (pickup != null && pickup.gameObject != null)
-                        {
-                            NetworkServer.Destroy(pickup.gameObject);
-                            count++;
-                        }
-                    }
-                    if (count > 0)
-                    {
-                        Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 个地面物品</size>");
-                        Log.Info($"[清理系统] 已清理 {count} 个地面物品");
+                        NetworkServer.Destroy(ragdoll.gameObject);
+                        count++;
                     }
                 }
-                catch (System.Exception ex)
+                if (count > 0)
                 {
-                    Log.Error($"[清理系统] 清理物品时出错: {ex}");
+                    Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 具尸体</size>");
+                    Log.Info($"[清理系统] 已清理 {count} 具尸体");
                 }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[清理系统] 清理尸体失败: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 立即清理所有地面物品（Pickup）
+        /// </summary>
+        private void CleanItemsNow()
+        {
+            try
+            {
+                var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+                int count = 0;
+                foreach (var pickup in pickups)
+                {
+                    if (pickup != null && pickup.gameObject != null)
+                    {
+                        NetworkServer.Destroy(pickup.gameObject);
+                        count++;
+                    }
+                }
+                if (count > 0)
+                {
+                    Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 个地面物品</size>");
+                    Log.Info($"[清理系统] 已清理 {count} 个地面物品");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[清理系统] 清理物品失败: {ex}");
             }
         }
         #endregion
 
-        #region 回合事件
+        #region 回合事件绑定
+        // 在你的事件注册方法中（如 RegisterEvents），确保绑定：
+        // Exiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
+        // Exiled.Events.Handlers.Server.RestartingRound += OnRoundRestarting;
 
         private void OnRoundStarted()
         {
             StartCleanup();
         }
 
-        private void RoundRestarted()
+        private void OnRoundRestarting()
         {
             StopCleanup();
         }
-
         #endregion
+
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
             Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*鸟之诗.梦时镜怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>",true);

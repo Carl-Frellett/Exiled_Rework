@@ -295,6 +295,11 @@ namespace RExiled.API.Features
 
         #region 管理员
         /// <summary>
+        /// 获取玩家是否为管理员。
+        /// </summary>
+        public bool RemoteAdminAccess => ReferenceHub.serverRoles.RemoteAdmin;
+
+        /// <summary>
         /// 向这名玩家发送管理员面板消息。
         /// </summary>
         public void RemoteAdminMessage(string message, bool success = true, string pluginName = null)

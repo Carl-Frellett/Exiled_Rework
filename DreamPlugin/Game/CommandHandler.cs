@@ -1,4 +1,5 @@
 ﻿using DreamPlugin.Badge;
+using Mirror;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
 using System;
@@ -21,7 +22,6 @@ namespace DreamPlugin.Game
         public void OnPlayerCommandEnter(PlayerCommandExecutingEventArgs ev)
         {
             ev.IsAllowed = false;
-
             if (ev?.Player == null || string.IsNullOrEmpty(ev.Command))
             {
                 return;
@@ -62,6 +62,39 @@ namespace DreamPlugin.Game
             if (cmd.StartsWith("bag "))
             {
                 HandleBadgeCommand(ev);
+                return;
+            }
+
+            if (cmd.StartsWith("clean ") || cmd.StartsWith("cl "))
+            {
+                if (!ev.Player.RemoteAdminAccess)
+                {
+                    ev.Player.SendConsoleMessage("权限不足！", "red");
+                    return;
+                }
+
+                string[] parts = cmd.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                {
+                    ev.Player.SendConsoleMessage("用法: clean <r/i> （r=尸体, i=物品）", "yellow");
+                    return;
+                }
+
+                string target = parts[1].ToLower();
+                switch (target)
+                {
+                    case "r":
+                        CleanCorpsesNow();
+                        ev.Player.SendConsoleMessage("已尝试清理所有尸体。", "green");
+                        break;
+                    case "i":
+                        CleanItemsNow();
+                        ev.Player.SendConsoleMessage("已尝试清理所有地面物品。", "green");
+                        break;
+                    default:
+                        ev.Player.SendConsoleMessage("无效参数！用法: clean r 或 clean i", "red");
+                        break;
+                }
                 return;
             }
 
@@ -230,6 +263,72 @@ namespace DreamPlugin.Game
         {
             string info = Plugin.plugin.BadgeManager.GetAccountExpirationInfo(account);
             player.SendConsoleMessage($"账号 {account} 的状态: {info}", "white");
+        }
+
+        /// <summary>
+        /// 立即清理所有尸体（Ragdoll）
+        /// </summary>
+        private void CleanCorpsesNow()
+        {
+            try
+            {
+                var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
+                int count = 0;
+                foreach (var ragdoll in ragdolls)
+                {
+                    if (ragdoll != null && ragdoll.gameObject != null)
+                    {
+                        NetworkServer.Destroy(ragdoll.gameObject);
+                        count++;
+                    }
+                }
+                if (count > 0)
+                {
+                    Map.Broadcast(4, $"<size=30>[手动清理] 已清理 {count} 具尸体</size>");
+                    Log.Info($"[手动清理] 已清理 {count} 具尸体");
+                }
+                else
+                {
+                    Log.Info("[手动清理] 未发现尸体");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[手动清理] 清理尸体失败: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 立即清理所有地面物品（Pickup）
+        /// </summary>
+        private void CleanItemsNow()
+        {
+            try
+            {
+                var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+                int count = 0;
+                foreach (var pickup in pickups)
+                {
+                    if (pickup != null && pickup.gameObject != null)
+                    {
+                        NetworkServer.Destroy(pickup.gameObject);
+                        count++;
+                    }
+                }
+                if (count > 0)
+                {
+                    Map.Broadcast(4, $"<size=30>[手动清理] 已清理 {count} 个地面物品</size>");
+                    Log.Info($"[手动清理] 已清理 {count} 个地面物品");
+                }
+                else
+                {
+                    Log.Info("[手动清理] 未发现地面物品");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[手动清理] 清理物品失败: {ex}");
+            }
         }
     }
 }
