@@ -2,22 +2,21 @@
 using RExiled.API.Enums;
 using RExiled.API.Features;
 using System;
-using UnityEngine;
 
 namespace RExiled.Events
 {
-    public sealed class Events : Plugin<Config>
+    public class Events : Plugin<Config>
     {
         private int patchesCounter;
         private static DateTime roundStartTime;
-
-        private Events() { }
 
         public delegate void CustomEventHandler<TEventArgs>(TEventArgs ev) where TEventArgs : System.EventArgs;
         public delegate void CustomEventHandler();
 
         public override PluginPriority Priority { get; } = PluginPriority.First;
         public Harmony Harmony { get; private set; }
+
+        public override string Author => "Carl Frellett & Exiled Team";
 
         public override void OnEnabled()
         {

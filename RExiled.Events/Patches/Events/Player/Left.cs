@@ -21,7 +21,7 @@ namespace RExiled.Events.Patches.Events.Player
 
                 var ev = new LeftEventArgs(player);
 
-                Log.SendRaw($"Player {ev.Player.Nickname} ({player?.Id}) disconnected LOGTYPE2");
+                Log.SendRaw($"Player {ev.Player?.Nickname} ({player?.Id}) ({ev.Player?.IPAddress}) disconnected LOGTYPE2");
 
                 Handlers.Player.OnLeft(ev);
 

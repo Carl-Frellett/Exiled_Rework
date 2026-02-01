@@ -11,13 +11,12 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<LeftEventArgs> Left;
 
-        public static event CustomEventHandler<PlayerConsoleCommandExecutingEventArgs> PlayerConsoleCommandExecuting;
+        public static event CustomEventHandler<PlayerCommandExecutingEventArgs> PlayerCommandExecuting;
 
         public static event CustomEventHandler<RemoteAdminCommandExecutingEventArgs> RemoteAdminCommandExecuting;
-
         public static void OnRemoteAdminCommandExecuting(RemoteAdminCommandExecutingEventArgs ev) => RemoteAdminCommandExecuting.InvokeSafely(ev);
 
-        public static void OnPlayerConsoleCommandExecuting(PlayerConsoleCommandExecutingEventArgs ev) => PlayerConsoleCommandExecuting.InvokeSafely(ev);
+        public static void OnInGameConsoleCommandExecuting(PlayerCommandExecutingEventArgs ev) => PlayerCommandExecuting.InvokeSafely(ev);
 
         public static void OnJoined(JoinedEventArgs ev) => Joined.InvokeSafely(ev);
 

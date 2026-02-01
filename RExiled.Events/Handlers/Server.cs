@@ -6,7 +6,6 @@ namespace RExiled.Events.Handlers
 {
     public static class Server
     {
-        public static event CustomEventHandler<ServerConsoleCommandExecutingEventArgs> ServerConsoleCommandExecuting;
 
         public static event CustomEventHandler RoundStarted;
 
@@ -14,12 +13,14 @@ namespace RExiled.Events.Handlers
         
         public static event CustomEventHandler RoundEnded;
 
+        public static event CustomEventHandler<ServerCommandExecutingEventArgs> ServerCommandExecuting;
+
+        public static void OnTerminalCommandExecuting(ServerCommandExecutingEventArgs ev)=> ServerCommandExecuting.InvokeSafely(ev);
+
         public static void OnRoundEnded() => RoundEnded.InvokeSafely();
 
         public static void OnRoundRestarted() => RoundRestarted.InvokeSafely();
 
         public static void OnRoundStarted() => RoundStarted.InvokeSafely();
-
-        public static void OnServerConsoleCommandExecuting(ServerConsoleCommandExecutingEventArgs ev) => ServerConsoleCommandExecuting.InvokeSafely(ev);
     }
 }

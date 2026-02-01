@@ -94,6 +94,7 @@
     <Compile Include="Enums\RoomType.cs" />
     <Compile Include="Enums\Side.cs" />
     <Compile Include="Enums\ZoneType.cs" />
+    <Compile Include="Extensions\NetworkConnectionExtensions.cs" />
     <Compile Include="Extensions\Reflection.cs" />
     <Compile Include="Extensions\Role.cs" />
     <Compile Include="Extensions\String.cs" />

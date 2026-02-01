@@ -10,7 +10,7 @@ namespace RExiled.Events.Patches
     {
         private static readonly Regex FinishedRegex = new Regex(@"Round finished! Anomalies: \d+", RegexOptions.Compiled);
 
-        private static void Prefix(string text, Color _, bool __)
+        private static void Prefix(string text, Color c, bool nospace)
         {
             if (RExiled.Events.Events.GetRoundDuration() < 2f) return;
 

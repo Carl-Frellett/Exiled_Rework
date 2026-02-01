@@ -13,14 +13,14 @@ namespace RExiled.Events.Extensions
 
     public static class Event
     {
-        public static void InvokeSafely<T>(this Events.CustomEventHandler<T> ev, T arg)
+        public static void InvokeSafely<T>(this RExiled.Events.Events.CustomEventHandler<T> ev, T arg)
             where T : EventArgs
         {
             if (ev == null)
                 return;
 
             var eventName = ev.GetType().FullName;
-            foreach (Events.CustomEventHandler<T> handler in ev.GetInvocationList())
+            foreach (RExiled.Events.Events.CustomEventHandler<T> handler in ev.GetInvocationList())
             {
                 try
                 {
@@ -33,13 +33,13 @@ namespace RExiled.Events.Extensions
             }
         }
 
-        public static void InvokeSafely(this Events.CustomEventHandler ev)
+        public static void InvokeSafely(this RExiled.Events.Events.CustomEventHandler ev)
         {
             if (ev == null)
                 return;
 
             string eventName = ev.GetType().FullName;
-            foreach (Events.CustomEventHandler handler in ev.GetInvocationList())
+            foreach (RExiled.Events.Events.CustomEventHandler handler in ev.GetInvocationList())
             {
                 try
                 {

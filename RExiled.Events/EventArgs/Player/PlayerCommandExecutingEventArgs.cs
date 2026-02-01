@@ -1,11 +1,8 @@
 ﻿namespace RExiled.Events.EventArgs.Player
 {
-    /// <summary>
-    /// 玩家在控制台执行指令时触发的事件
-    /// </summary>
-    public class PlayerConsoleCommandExecutingEventArgs : System.EventArgs
+    public class PlayerCommandExecutingEventArgs : System.EventArgs
     {
-        public PlayerConsoleCommandExecutingEventArgs(RExiled.API.Features.Player player, string command, bool isAllowed)
+        public PlayerCommandExecutingEventArgs(RExiled.API.Features.Player player, string command, bool isAllowed)
         {
             Player = player;
             Command = command;
