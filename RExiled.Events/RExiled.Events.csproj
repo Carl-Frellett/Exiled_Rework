@@ -106,6 +106,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
+    <Compile Include="EventArgs\Player\ChangedRoleEventArgs.cs" />
+    <Compile Include="EventArgs\Player\ChangingRoleEventArgs.cs" />
     <Compile Include="EventArgs\Player\PlayerCommandExecutingEventArgs.cs" />
     <Compile Include="EventArgs\Player\JoinedEventArgs.cs" />
     <Compile Include="EventArgs\Player\LeftEventArgs.cs" />
@@ -114,6 +116,7 @@
     <Compile Include="Extensions\Event.cs" />
     <Compile Include="Handlers\Player.cs" />
     <Compile Include="Handlers\Server.cs" />
+    <Compile Include="Patches\Events\Player\ChangingAndChangedRolePatch.cs" />
     <Compile Include="Patches\Events\Player\PlayerCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\Joined.cs" />
     <Compile Include="Patches\Events\Player\Left.cs" />

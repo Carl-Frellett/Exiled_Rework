@@ -3,6 +3,7 @@
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
   </Configurations>
+  <Project Path="DreamPlugin/DreamPlugin.csproj" Id="7ea2b41d-6f6b-4518-ace6-133bf82d9aef" />
   <Project Path="RExiled.Bootstrap/RExiled.Bootstrap.csproj" Id="4eb35a3f-020c-4bb3-8cd4-50881e613716">
     <Platform Solution="*|x64" Project="x64" />
   </Project>

@@ -63,14 +63,7 @@ namespace RExiled.Events
             try
             {
                 Harmony = new Harmony($"exiled.events.{++patchesCounter}");
-#if DEBUG
-                var lastDebugStatus = Harmony.DEBUG;
-                Harmony.DEBUG = true;
-#endif
                 Harmony.PatchAll();
-#if DEBUG
-                Harmony.DEBUG = lastDebugStatus;
-#endif
                 Log.Debug("Events patched successfully!");
             }
             catch (Exception exception)

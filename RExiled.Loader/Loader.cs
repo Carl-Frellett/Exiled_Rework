@@ -12,8 +12,8 @@ namespace RExiled.Loader
     {
         static Loader()
         {
-            Log.Info($"Initializing at {Environment.CurrentDirectory}");
-            Log.SendRaw($"{Assembly.GetExecutingAssembly().GetName().Name} - Version {Version.Major}.{Version.Minor}.{Version.Build}");
+            Log.OK($"Initializing at {Environment.CurrentDirectory}");
+            Log.OK($"{Assembly.GetExecutingAssembly().GetName().Name} - Version {Version.Major}.{Version.Minor}.{Version.Build}");
 
             CustomNetworkManager.Modded = true;
 

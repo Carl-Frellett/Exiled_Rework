@@ -29,5 +29,10 @@ namespace RExiled.API.Features
         {
             ServerConsole.AddLog($"[ERROR] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE4");
         }
+
+        public static void OK(string message)
+        {
+            ServerConsole.AddLog($"[OK] [{Assembly.GetCallingAssembly().GetName().Name}] {message} LOGTYPE10");
+        }
     }
 }

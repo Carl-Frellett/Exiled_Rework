@@ -1,9 +1,9 @@
-﻿namespace RExiled.Bootstrap
-{
-    using System;
-    using System.IO;
-    using System.Reflection;
+﻿using System;
+using System.IO;
+using System.Reflection;
 
+namespace RExiled.Bootstrap
+{
     public sealed class Bootstrap
     {
         public static bool IsLoaded { get; private set; }
@@ -12,59 +12,60 @@
         {
             if (IsLoaded)
             {
-                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled has already been loaded! LOGTYPE2");
+                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled has already been loaded! LOGTYPE10");
                 return;
             }
 
             try
             {
-                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled is loading...");
+                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled is loading... LOGTYPE10");
 
-                string rootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EXILED");
-                string dependenciesPath = Path.Combine(rootPath, "Plugins", "dependencies");
+                string exiledRoot = Path.Combine(Environment.CurrentDirectory, "EXILED");
+                exiledRoot = Path.Combine(Environment.CurrentDirectory, "EXILED");
 
-                if (Environment.CurrentDirectory.Contains("testing", StringComparison.OrdinalIgnoreCase))
-                    rootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EXILED-Testing");
+                string loaderPath = Path.Combine(exiledRoot, "RExiled.Loader.dll");
+                string pluginsDir = Path.Combine(exiledRoot, "Plugins");
+                string dependenciesDir = Path.Combine(pluginsDir, "dependencies");
 
-                if (!Directory.Exists(rootPath))
-                    Directory.CreateDirectory(rootPath);
+                string apiPath = Path.Combine(dependenciesDir, "RExiled.API.dll");
+                string yamlPath = Path.Combine(dependenciesDir, "YamlDotNet.dll");
 
-                if (File.Exists(Path.Combine(rootPath, "RExiled.Loader.dll")))
+                if (!File.Exists(loaderPath))
                 {
-                    if (File.Exists(Path.Combine(dependenciesPath, "RExiled.API.dll")))
-                    {
-                        if (File.Exists(Path.Combine(dependenciesPath, "YamlDotNet.dll")))
-                        {
-                            Assembly.Load(File.ReadAllBytes(Path.Combine(rootPath, "RExiled.Loader.dll")))
-                                .GetType("RExiled.Loader.Loader")
-                                .GetMethod("Run")
-                                ?.Invoke(
-                                    null,
-                                    new object[]
-                                    {
-                                        new Assembly[]
-                                        {
-                                            Assembly.Load(File.ReadAllBytes(Path.Combine(dependenciesPath, "RExiled.API.dll"))),
-                                            Assembly.Load(File.ReadAllBytes(Path.Combine(dependenciesPath, "YamlDotNet.dll"))),
-                                        },
-                                    });
+                    ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.Loader.dll was not found at {loaderPath}, RExiled won't be loaded! LOGTYPE4");
+                    return;
+                }
 
-                            IsLoaded = true;
-                        }
-                        else
-                        {
-                            ServerConsole.AddLog($"[RExiled.Bootstrap] YamlDotNet.dll was not found, RExiled won't be loaded! LOGTYPE4");
-                        }
-                    }
-                    else
-                    {
-                        ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.API.dll was not found, RExiled won't be loaded! LOGTYPE4");
-                    }
-                }
-                else
+                if (!File.Exists(apiPath))
                 {
-                    ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.Loader.dll was not found, RExiled won't be loaded! LOGTYPE4");
+                    ServerConsole.AddLog($"[RExiled.Bootstrap] RExiled.API.dll was not found at {apiPath}, RExiled won't be loaded! LOGTYPE4");
+                    return;
                 }
+
+                if (!File.Exists(yamlPath))
+                {
+                    ServerConsole.AddLog($"[RExiled.Bootstrap] YamlDotNet.dll was not found at {yamlPath}, RExiled won't be loaded! LOGTYPE4");
+                    return;
+                }
+
+                Directory.CreateDirectory(pluginsDir);
+                Directory.CreateDirectory(dependenciesDir);
+                Directory.CreateDirectory(Path.Combine(exiledRoot, "Configs"));
+
+                var apiAssembly = Assembly.Load(File.ReadAllBytes(apiPath));
+                var yamlAssembly = Assembly.Load(File.ReadAllBytes(yamlPath));
+
+                Assembly loaderAssembly = Assembly.Load(File.ReadAllBytes(loaderPath));
+                var loaderType = loaderAssembly.GetType("RExiled.Loader.Loader");
+                var runMethod = loaderType?.GetMethod("Run");
+
+                runMethod?.Invoke(null, new object[]
+                {
+                    new Assembly[] { apiAssembly, yamlAssembly }
+                });
+
+                IsLoaded = true;
+                ServerConsole.AddLog("[RExiled.Bootstrap] RExiled loaded successfully!");
             }
             catch (Exception exception)
             {
