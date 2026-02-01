@@ -18,10 +18,14 @@ namespace DreamPlugin.Game
         private Dictionary<Player, Vector3> LastPos = new Dictionary<Player, Vector3>();
         private Dictionary<Player, float> KeepPosTime = new Dictionary<Player, float>();
 
+        private static readonly HashSet<int> _allocatedIds = new HashSet<int>();
+        private static readonly object _idLock = new object();
+
         public void RegisterEvents()
         {
             RExiled.Events.Handlers.Player.ChangedRole += OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
+            RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundRestarting;
 
@@ -32,6 +36,7 @@ namespace DreamPlugin.Game
         {
             RExiled.Events.Handlers.Player.ChangedRole -= OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
+            RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundRestarting;
 
@@ -161,16 +166,17 @@ namespace DreamPlugin.Game
 
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
-            HashSet<int> usedIds = new HashSet<int>();
-            foreach (var player in Player.List)
-            {
-                usedIds.Add(player.Id);
-            }
+            int newId;
 
-            int newId = 2;
-            while (usedIds.Contains(newId))
+            lock (_idLock)
             {
-                newId++;
+                newId = 2;
+                while (_allocatedIds.Contains(newId))
+                {
+                    newId++;
+                }
+
+                _allocatedIds.Add(newId);
             }
 
             ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
@@ -183,7 +189,13 @@ namespace DreamPlugin.Game
                 ev.Player.RankName = string.Empty;
             });
         }
-
+        public void OnPlayerLeft(LeftEventArgs ev)
+        {
+            lock (_idLock)
+            {
+                _allocatedIds.Remove(ev.Player.Id);
+            }
+        }
         public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
         {
             if (ev.Player == null) return;
@@ -222,31 +234,13 @@ namespace DreamPlugin.Game
                 }
                 else if (newRole == RoleType.NtfCadet)
                 {
-                    List<ItemType> items = new List<ItemType>()
-                    {
-                        ItemType.KeycardNTFLieutenant,
-                        ItemType.GunProject90,
-                        ItemType.WeaponManagerTablet,
-                        ItemType.Disarmer,
-                        ItemType.Radio,
-                        ItemType.Medkit,
-                        ItemType.Adrenaline
-                    };
-                    ev.Player.ResetInventory(items);
+                    ev.Player.AddItem(ItemType.Adrenaline);
+                    ev.Player.AddItem(ItemType.GrenadeFlash);
                 }
                 else if (newRole == RoleType.NtfLieutenant)
                 {
-                    List<ItemType> items = new List<ItemType>()
-                    {
-                        ItemType.KeycardNTFLieutenant,
-                        ItemType.GunE11SR,
-                        ItemType.GunUSP,
-                        ItemType.GrenadeFrag,
-                        ItemType.WeaponManagerTablet,
-                        ItemType.Disarmer,
-                        ItemType.Radio,
-                        ItemType.Medkit
-                    };
+                    ev.Player.AddItem(ItemType.GunUSP);
+                    ev.Player.AddItem(ItemType.GrenadeFrag);
                 }
                 else if (newRole == RoleType.FacilityGuard)
                 {
