@@ -108,7 +108,7 @@ namespace RExiled.API.Features
         /// <summary>
         /// 获取玩家的网络连接对象（仅适用于 SCP-079 角色）。
         /// </summary>
-        public NetworkConnection Connection => ReferenceHub.scp079PlayerScript.connectionToClient;
+        public Mirror.NetworkConnection Connection => ReferenceHub.scp079PlayerScript.connectionToClient;
 
         /// <summary>
         /// 获取玩家的命令Sender类。
