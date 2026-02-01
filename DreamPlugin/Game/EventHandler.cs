@@ -242,6 +242,11 @@ namespace DreamPlugin.Game
                     ev.Player.AddItem(ItemType.GunUSP);
                     ev.Player.AddItem(ItemType.GrenadeFrag);
                 }
+                else if (newRole == RoleType.NtfScientist)
+                {
+                    ev.Player.AddItem(ItemType.GunUSP);
+                    ev.Player.AddItem(ItemType.GrenadeFrag);
+                }
                 else if (newRole == RoleType.FacilityGuard)
                 {
                     ev.Player.AddItem(ItemType.GrenadeFrag);

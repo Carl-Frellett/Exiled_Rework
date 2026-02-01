@@ -126,6 +126,8 @@
     <Compile Include="Patches\Events\Server\RoundEndedPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundRestartedPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundStartedPatch.cs" />
+    <Compile Include="Patches\Fix\AntiFlyPatch.cs" />
+    <Compile Include="Patches\Fix\IntercomSpeakingFix.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

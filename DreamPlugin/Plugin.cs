@@ -15,6 +15,8 @@ namespace DreamPlugin
         private EventHandler EventHandler = new EventHandler();
 
         public BadgeManager BadgeManager;
+
+        private WebServer _webServer;
         public override void OnEnabled()
         {
             base.OnEnabled();
@@ -24,6 +26,9 @@ namespace DreamPlugin
 
             BadgeManager = new BadgeManager();
             BadgeManager.LoadBadges();
+
+            _webServer = new WebServer();
+            _webServer.Start();
         }
 
         public override void OnDisabled()
@@ -33,6 +38,9 @@ namespace DreamPlugin
             EventHandler.UnregisterEvents();
 
             BadgeManager.SaveBadges();
+
+            _webServer?.Dispose();
+            _webServer = null;
         }
     }
 }
