@@ -4,6 +4,7 @@ using RExiled.API.Features;
 using RExiled.Events.EventArgs;
 using RExiled.Events.EventArgs.Player;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DreamPlugin.Game
@@ -11,8 +12,9 @@ namespace DreamPlugin.Game
     public class EventHandler
     {
         private static readonly HashSet<int> PendingGiveItems = new HashSet<int>();
-        //SCP回血
+
         private CoroutineHandle SCPHealthCoroutine;
+
         private Dictionary<Player, Vector3> LastPos = new Dictionary<Player, Vector3>();
         private Dictionary<Player, float> KeepPosTime = new Dictionary<Player, float>();
 
@@ -20,62 +22,71 @@ namespace DreamPlugin.Game
         {
             RExiled.Events.Handlers.Player.ChangedRole += OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
+            RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
+            RExiled.Events.Handlers.Server.RoundRestarted += RoundRestarted;
+
             SCPHealthCoroutine = Timing.RunCoroutine(SCPHealth());
-            StartCleanup();
         }
 
         public void UnregisterEvents()
         {
             RExiled.Events.Handlers.Player.ChangedRole -= OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
+            RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
+            RExiled.Events.Handlers.Server.RoundRestarted -= RoundRestarted;
+
             PendingGiveItems.Clear();
-            StopCleanup();
         }
 
-        #region 物品清理
+        #region 清理系统（尸体 & 物品）
+
         private CoroutineHandle _corpseCoroutine;
         private CoroutineHandle _itemCoroutine;
 
-        public void StartCleanup()
+        private void StartCleanup()
         {
+            StopCleanup();
+
             _corpseCoroutine = Timing.RunCoroutine(CleanCorpsesRoutine(), Segment.Update);
             _itemCoroutine = Timing.RunCoroutine(CleanItemsRoutine(), Segment.Update);
         }
 
-        public void StopCleanup()
+        private void StopCleanup()
         {
-            if (_corpseCoroutine.IsRunning)
-                Timing.KillCoroutines(_corpseCoroutine);
-
-            if (_itemCoroutine.IsRunning)
-                Timing.KillCoroutines(_itemCoroutine);
+            if (_corpseCoroutine.IsRunning) Timing.KillCoroutines(_corpseCoroutine);
+            if (_itemCoroutine.IsRunning) Timing.KillCoroutines(_itemCoroutine);
         }
 
         private IEnumerator<float> CleanCorpsesRoutine()
         {
             while (true)
             {
-                yield return Timing.WaitUntilDone(Timing.CallDelayed(300f, () =>
+                yield return Timing.WaitForSeconds(240f);
+
+                if (!Round.IsStarted) break;
+
+                try
                 {
-                    try
+                    var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
+                    int count = 0;
+                    foreach (var ragdoll in ragdolls)
                     {
-                        var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
-                        int count = 0;
-                        foreach (var ragdoll in ragdolls)
+                        if (ragdoll != null && ragdoll.gameObject != null)
                         {
-                            if (ragdoll != null && ragdoll.gameObject != null)
-                            {
-                                NetworkServer.Destroy(ragdoll.gameObject);
-                                count++;
-                            }
+                            NetworkServer.Destroy(ragdoll.gameObject);
+                            count++;
                         }
-                        Map.Broadcast(4,$"[清理系统] 已清理 {count} 具尸体");
                     }
-                    catch (System.Exception ex)
+                    if (count > 0)
                     {
-                        Log.Error($"[清理系统] 清理尸体时出错: {ex}");
+                        Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 具尸体</size>");
+                        Log.Info($"[清理系统] 已清理 {count} 具尸体");
                     }
-                }));
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Error($"[清理系统] 清理尸体时出错: {ex}");
+                }
             }
         }
 
@@ -83,51 +94,67 @@ namespace DreamPlugin.Game
         {
             while (true)
             {
-                yield return Timing.WaitUntilDone(Timing.CallDelayed(900f, () =>
+                yield return Timing.WaitForSeconds(900f);
+
+                if (!Round.IsStarted) break;
+
+                try
                 {
-                    try
+                    var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+                    int count = 0;
+                    foreach (var pickup in pickups)
                     {
-                        var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
-                        int count = 0;
-                        foreach (var pickup in pickups)
+                        if (pickup != null && pickup.gameObject != null)
                         {
-                            if (pickup != null && pickup.gameObject != null)
-                            {
-                                NetworkServer.Destroy(pickup.gameObject);
-                                count++;
-                            }
+                            NetworkServer.Destroy(pickup.gameObject);
+                            count++;
                         }
-                        Map.Broadcast(4, $"[清理系统] 已清理 {count} 个地面物品");
                     }
-                    catch (System.Exception ex)
+                    if (count > 0)
                     {
-                        Log.Error($"[清理系统] 清理物品时出错: {ex}");
+                        Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 个地面物品</size>");
+                        Log.Info($"[清理系统] 已清理 {count} 个地面物品");
                     }
-                }));
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Error($"[清理系统] 清理物品时出错: {ex}");
+                }
             }
         }
         #endregion
 
+        #region 回合事件
+
+        private void OnRoundStarted()
+        {
+            StartCleanup();
+        }
+
+        private void RoundRestarted()
+        {
+            StopCleanup();
+        }
+
+        #endregion
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
-            ev.Player.Nickname = ev.Player.Nickname;
-            Timing.CallDelayed(1.5f, () =>
+            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*鸟之诗.梦时镜怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>",true);
+            ev.Player.RankName = "_";
+            ev.Player.RankName = string.Empty;
+            Timing.CallDelayed(0.2f, () =>
             {
-                if (ev.Player != null)
-                    ev.Player.Nickname = ev.Player.Nickname;
+                ev.Player.RankName = string.Empty;
             });
         }
 
         public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
         {
             if (ev.Player == null) return;
-
             int playerId = ev.Player.Id;
             RoleType newRole = ev.NewRole;
 
-            if (newRole != RoleType.ClassD &&
-                newRole != RoleType.ChaosInsurgency &&
-                newRole != RoleType.NtfCommander)
+            if (newRole != RoleType.ClassD && newRole != RoleType.ChaosInsurgency && newRole != RoleType.NtfCommander)
             {
                 return;
             }
@@ -138,13 +165,10 @@ namespace DreamPlugin.Game
             }
 
             PendingGiveItems.Add(playerId);
-
             Timing.CallDelayed(0.2f, () =>
             {
                 PendingGiveItems.Remove(playerId);
-
-                if (ev.Player == null || ev.Player.Role != newRole)
-                    return;
+                if (ev.Player == null || ev.Player.Role != newRole) return;
 
                 if (newRole == RoleType.ClassD)
                 {
@@ -160,6 +184,38 @@ namespace DreamPlugin.Game
                 {
                     ev.Player.AddItem(ItemType.Medkit);
                 }
+                else if (newRole == RoleType.NtfCadet)
+                {
+                    List<ItemType> items = new List<ItemType>()
+                    {
+                        ItemType.KeycardNTFLieutenant,
+                        ItemType.GunProject90,
+                        ItemType.WeaponManagerTablet,
+                        ItemType.Disarmer,
+                        ItemType.Radio,
+                        ItemType.Medkit,
+                        ItemType.Adrenaline
+                    };
+                    ev.Player.ResetInventory(items);
+                }
+                else if (newRole == RoleType.NtfLieutenant)
+                {
+                    List<ItemType> items = new List<ItemType>()
+                    {
+                        ItemType.KeycardNTFLieutenant,
+                        ItemType.GunE11SR,
+                        ItemType.GunUSP,
+                        ItemType.GrenadeFrag,
+                        ItemType.WeaponManagerTablet,
+                        ItemType.Disarmer,
+                        ItemType.Radio,
+                        ItemType.Medkit
+                    };
+                }
+                else if (newRole == RoleType.FacilityGuard)
+                {
+                    ev.Player.AddItem(ItemType.GrenadeFrag);
+                }
             });
         }
 
@@ -169,8 +225,7 @@ namespace DreamPlugin.Game
             {
                 foreach (Player player in Player.List)
                 {
-                    if (!player.IsSCP)
-                        continue;
+                    if (!player.IsSCP) continue;
 
                     if (!LastPos.ContainsKey(player))
                     {
@@ -182,7 +237,6 @@ namespace DreamPlugin.Game
                         if (Vector3.Distance(player.Position, LastPos[player]) < 0.1f)
                         {
                             KeepPosTime[player] += 1f;
-
                             if (KeepPosTime[player] > 5 && player.Health < player.MaxHealth)
                             {
                                 player.Health += 3;

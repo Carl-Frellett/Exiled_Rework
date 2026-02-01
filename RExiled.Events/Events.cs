@@ -1,7 +1,12 @@
 ﻿using HarmonyLib;
+using MEC;
 using RExiled.API.Enums;
 using RExiled.API.Features;
+using RExiled.Events.EventArgs;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace RExiled.Events
 {
@@ -9,6 +14,11 @@ namespace RExiled.Events
     {
         private int patchesCounter;
         private static DateTime roundStartTime;
+
+        private CoroutineHandle _idleCheckCoroutine;
+        private static DateTime LastActiveTime;
+        private static bool WasLastCheckIdle;
+        private static bool IdleSent;
 
         public delegate void CustomEventHandler<TEventArgs>(TEventArgs ev) where TEventArgs : System.EventArgs;
         public delegate void CustomEventHandler();
@@ -25,8 +35,10 @@ namespace RExiled.Events
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundEnded += OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundEndedOrRestarted;
+            RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
 
             Patch();
+            StartIdler();
         }
 
         public override void OnDisabled()
@@ -36,26 +48,93 @@ namespace RExiled.Events
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundEnded -= OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundEndedOrRestarted;
+            RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
 
+            StopIdler();
             Unpatch();
         }
 
-        private void OnRoundStarted()
-        {
-            roundStartTime = DateTime.Now;
-        }
-
-        private void OnRoundEndedOrRestarted()
-        {
-            roundStartTime = DateTime.MinValue;
-        }
-
+        private void OnRoundStarted() => roundStartTime = DateTime.Now;
+        private void OnRoundEndedOrRestarted() => roundStartTime = DateTime.MinValue;
         public static float GetRoundDuration()
         {
-            if (roundStartTime == DateTime.MinValue)
-                return -1f;
-
+            if (roundStartTime == DateTime.MinValue) return -1f;
             return (float)(DateTime.Now - roundStartTime).TotalSeconds;
+        }
+
+        private void OnPlayerJoined(JoinedEventArgs ev)
+        {
+            MarkAsActive();
+        }
+
+        private void StartIdler()
+        {
+            LastActiveTime = DateTime.UtcNow;
+            WasLastCheckIdle = false;
+            IdleSent = false;
+            _idleCheckCoroutine = Timing.RunCoroutine(IdlerCheckRoutine(), Segment.Update);
+        }
+
+        private void StopIdler()
+        {
+            if (_idleCheckCoroutine.IsRunning)
+                Timing.KillCoroutines(_idleCheckCoroutine);
+
+            Time.timeScale = 1f;
+            Application.targetFrameRate = -1;
+        }
+
+        private void MarkAsActive()
+        {
+            if (WasLastCheckIdle)
+            {
+                Log.Info("Server activity detected. Resuming normal operation.");
+            }
+            WasLastCheckIdle = false;
+            IdleSent = false;
+            LastActiveTime = DateTime.UtcNow;
+            Time.timeScale = 1f;
+            Application.targetFrameRate = 60;
+        }
+
+        private IEnumerator<float> IdlerCheckRoutine()
+        {
+            const float checkInterval = 5f;
+            const float idleThresholdMinutes = 3f;
+
+            while (true)
+            {
+                yield return Timing.WaitForSeconds(checkInterval);
+
+                bool isIdle = Player.List.Count() == 0;
+
+                if (isIdle && !WasLastCheckIdle)
+                {
+                    LastActiveTime = DateTime.UtcNow;
+                    Log.Info("Server is now idle.");
+                }
+
+                if (isIdle && WasLastCheckIdle)
+                {
+                    if ((DateTime.UtcNow - LastActiveTime).TotalMinutes >= idleThresholdMinutes)
+                    {
+                        if (!IdleSent)
+                        {
+                            Log.Info($"Server has been idle for {idleThresholdMinutes} minutes. Entering low-power mode!");
+                            IdleSent = true;
+                        }
+                        Time.timeScale = 0.01f;
+                        Application.targetFrameRate = 1;
+                    }
+                }
+
+                if (!isIdle)
+                {
+                    MarkAsActive();
+                }
+
+                WasLastCheckIdle = isIdle;
+            }
         }
 
         public void Patch()

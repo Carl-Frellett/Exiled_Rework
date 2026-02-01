@@ -1,4 +1,5 @@
-﻿using DreamPlugin.Game;
+﻿using DreamPlugin.Badge;
+using DreamPlugin.Game;
 using RExiled.API.Features;
 
 namespace DreamPlugin
@@ -8,14 +9,21 @@ namespace DreamPlugin
         public override string Name => "DreamPlugin";
         public override string Author => "Carl Frellett";
 
+        public static Plugin plugin { get; private set; }
+
         private CommandHandler CommandHandler = new CommandHandler();
         private EventHandler EventHandler = new EventHandler();
 
+        public BadgeManager BadgeManager;
         public override void OnEnabled()
         {
             base.OnEnabled();
+            plugin = this;
             CommandHandler.RegisterEvents();
             EventHandler.RegisterEvents();
+
+            BadgeManager = new BadgeManager();
+            BadgeManager.LoadBadges();
         }
 
         public override void OnDisabled()
@@ -23,6 +31,8 @@ namespace DreamPlugin
             base.OnDisabled();
             CommandHandler.UnregisterEvents();
             EventHandler.UnregisterEvents();
+
+            BadgeManager.SaveBadges();
         }
     }
 }

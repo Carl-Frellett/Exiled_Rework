@@ -130,7 +130,30 @@ namespace RExiled.API.Features
         public string Nickname
         {
             get => ReferenceHub.nicknameSync.Network_myNickSync;
-            set => ReferenceHub.nicknameSync.Network_myNickSync = value;
+            set
+            {
+                ReferenceHub.nicknameSync.Network_myNickSync = value;
+                BlinkTag();
+            }
+        }
+        public string RankColor
+        {
+            get => ReferenceHub.serverRoles.NetworkMyColor;
+            set
+            {
+                ReferenceHub.serverRoles.SetColor(value);
+                BlinkTag();
+            }
+        }
+
+        public string RankName
+        {
+            get => ReferenceHub.serverRoles.NetworkMyText;
+            set
+            {
+                ReferenceHub.serverRoles.SetText(value);
+                BlinkTag();
+            }
         }
 
         /// <summary>
@@ -280,18 +303,28 @@ namespace RExiled.API.Features
         }
 
         /// <summary>
-        /// 闪烁这名玩家的标徽
+        /// 闪烁这名玩家的Tag
         /// </summary>
         public IEnumerator<float> BlinkTag()
         {
             yield return Timing.WaitForOneFrame;
 
-            BadgeHidden = !BadgeHidden;
+            HideTag();
 
             yield return Timing.WaitForOneFrame;
 
-            BadgeHidden = !BadgeHidden;
+            ShowTag();
         }
+
+        /// <summary>
+        /// 隐藏Tag
+        /// </summary>
+        private void HideTag() => ReferenceHub.characterClassManager.CallCmdRequestHideTag();
+
+        /// <summary>
+        /// 显示Tag
+        /// </summary>
+        private void ShowTag() => ReferenceHub.characterClassManager.CallCmdRequestShowTag(true);
 
         /// <summary>
         /// 封禁这名玩家

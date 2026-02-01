@@ -1,8 +1,8 @@
-﻿using RExiled.API.Features;
+﻿using DreamPlugin.Badge;
+using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace DreamPlugin.Game
 {
@@ -11,13 +11,11 @@ namespace DreamPlugin.Game
         public void RegisterEvents()
         {
             RExiled.Events.Handlers.Player.PlayerCommandExecuting += OnPlayerCommandEnter;
-            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting += OnPlayerRACommandEnter;
         }
 
         public void UnregisterEvents()
         {
             RExiled.Events.Handlers.Player.PlayerCommandExecuting -= OnPlayerCommandEnter;
-            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting -= OnPlayerRACommandEnter;
         }
 
         public void OnPlayerCommandEnter(PlayerCommandExecutingEventArgs ev)
@@ -61,81 +59,177 @@ namespace DreamPlugin.Game
                 return;
             }
 
+            if (cmd.StartsWith("bag "))
+            {
+                HandleBadgeCommand(ev);
+                return;
+            }
+
             ev.Player.SendConsoleMessage("未知指令!", "red");
         }
 
-        public void OnPlayerRACommandEnter(RemoteAdminCommandExecutingEventArgs ev)
+        private void HandleBadgeCommand(PlayerCommandExecutingEventArgs ev)
         {
-            if (ev.Player == null)
-                return;
+            var args = ev.Command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var player = ev.Player;
 
-            string cmd = ev.Command;
-
-            if (cmd.StartsWith("SetScale ", StringComparison.OrdinalIgnoreCase) ||
-                cmd.StartsWith("sps ", StringComparison.OrdinalIgnoreCase))
+            if (args.Length == 1)
             {
-                ev.IsAllowed = true;
-
-                var args = cmd.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (args.Length < 5)
-                {
-                    ev.Player.SendConsoleMessage("用法: sps <目标> <X> <Y> <Z>", "red");
-                    return;
-                }
-
-                string targetSpec = args[1];
-                if (!float.TryParse(args[2], out float x) ||
-                    !float.TryParse(args[3], out float y) ||
-                    !float.TryParse(args[4], out float z))
-                {
-                    ev.Player.SendConsoleMessage("错误: X/Y/Z 必须为数字！", "red");
-                    return;
-                }
-
-                x = Mathf.Clamp(x, 0.1f, 100f);
-                y = Mathf.Clamp(y, 0.1f, 100f);
-                z = Mathf.Clamp(z, 0.1f, 100f);
-
-                var targets = new System.Collections.Generic.List<Player>();
-
-                if (targetSpec.Equals("all", StringComparison.OrdinalIgnoreCase))
-                {
-                    targets.AddRange(Player.List.Where(p => p.IsAlive));
-                }
-                else if (targetSpec.Contains("."))
-                {
-                    foreach (var idStr in targetSpec.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                        if (int.TryParse(idStr, out int id) && Player.Get(id) is var p && p != null && p.IsAlive)
-                            targets.Add(p);
-                    }
-                }
-                else if (int.TryParse(targetSpec, out int singleId) && Player.Get(singleId) is var p2 && p2 != null && p2.IsAlive)
-                {
-                    targets.Add(p2);
-                }
-
-                if (targets.Count == 0)
-                {
-                    ev.Player.SendConsoleMessage("未找到有效目标。", "red");
-                    return;
-                }
-
-                foreach (var p in targets)
-                {
-                    try
-                    {
-                        p.ReferenceHub.transform.localScale = new UnityEngine.Vector3(x, y, z);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Log.Error($"[SetScale] 应用缩放失败: {ex}");
-                    }
-                }
-
-                ev.Player.SendConsoleMessage($"已设置 {targets.Count} 名玩家缩放为 ({x:F2}, {y:F2}, {z:F2})", "green");
-                Log.Info($"[SetScale] {ev.Player.Nickname} 设置了 {targets.Count} 名玩家的缩放");
+                player.SendConsoleMessage("用法: bag <账号> <密码> 或 bag <子命令>", "red");
+                return;
             }
+
+            string subCommand = args[1].ToLower();
+            var badgeManager = Plugin.plugin.BadgeManager;
+            string adminPassword = Plugin.plugin.Config.AdminPwd;
+
+            switch (subCommand)
+            {
+                case "reg":
+                case "register":
+                    HandleRegister(player, args, adminPassword);
+                    break;
+
+                case "del":
+                case "delete":
+                    HandleDelete(player, args, adminPassword);
+                    break;
+
+                case "login":
+                case "log":
+                    if (args.Length >= 4)
+                        HandleLogin(player, args[2], args[3]);
+                    else
+                        player.SendConsoleMessage("用法: bag login <账号> <密码>", "red");
+                    break;
+
+                case "info":
+                    if (args.Length >= 3)
+                        HandleInfo(player, args[2]);
+                    else
+                        player.SendConsoleMessage("用法: bag info <账号>", "red");
+                    break;
+
+                default:
+                    // 尝试直接登录：bag <账号> <密码>
+                    if (args.Length >= 3)
+                    {
+                        HandleLogin(player, args[1], args[2]);
+                    }
+                    else
+                    {
+                        player.SendConsoleMessage("用法: bag <账号> <密码> 或 bag <子命令>", "red");
+                    }
+                    break;
+            }
+        }
+
+        private void HandleRegister(RExiled.API.Features.Player player, string[] args, string adminPassword)
+        {
+            if (args.Length < 8)
+            {
+                string masked = string.IsNullOrEmpty(adminPassword) ? "未设置" :
+                    adminPassword.Length <= 2 ? "***" : adminPassword.Substring(0, 2) + new string('*', adminPassword.Length - 2);
+
+                player.SendConsoleMessage(
+                    "\n用法: bag reg <管理员密码> <账号> <密码> <类型> <月数> <内容> [颜色]\n" +
+                    "类型: sr(单色), rr(彩色), sdr(单色动态), rdr(彩色动态)\n" +
+                    $"当前管理员密码: {masked}", "yellow");
+                return;
+            }
+
+            string inputAdminPwd = args[2];
+            string account = args[3];
+            string password = args[4];
+            string typeStr = args[5].ToLower();
+            string monthStr = args[6].ToLower();
+            string content = args[7];
+            string color = args.Length > 8 ? args[8] : null;
+
+            if (inputAdminPwd != adminPassword)
+            {
+                player.SendConsoleMessage("管理员密码错误，注册失败", "red");
+                return;
+            }
+
+            int expirationMonths = 0;
+            if (monthStr != "all")
+            {
+                if (!int.TryParse(monthStr, out expirationMonths) || expirationMonths <= 0)
+                {
+                    player.SendConsoleMessage("月数必须为正整数或'all'（永久）", "red");
+                    return;
+                }
+            }
+
+            BadgeType badgeType;
+            switch (typeStr)
+            {
+                case "sr": badgeType = BadgeType.Simple; break;
+                case "rr": badgeType = BadgeType.Rainbow; break;
+                case "sdr": badgeType = BadgeType.SimpleDynamic; break;
+                case "rdr": badgeType = BadgeType.RainbowDynamic; break;
+                default:
+                    player.SendConsoleMessage("无效的称号类型! 可用: sr, rr, sdr, rdr", "red");
+                    return;
+            }
+
+            if (Plugin.plugin.BadgeManager.RegisterBadge(account, password, badgeType, content, color, expirationMonths))
+            {
+                string expireInfo = expirationMonths == 0 ? "永久" : $"{expirationMonths}个月";
+                player.SendConsoleMessage($"称号账号 {account} 注册成功! 有效期: {expireInfo}", "green");
+            }
+            else
+            {
+                player.SendConsoleMessage("注册失败", "red");
+            }
+        }
+
+        private void HandleDelete(RExiled.API.Features.Player player, string[] args, string adminPassword)
+        {
+            if (args.Length < 4)
+            {
+                player.SendConsoleMessage("用法: bag del <管理员密码> <账号>", "red");
+                return;
+            }
+
+            string inputAdminPwd = args[2];
+            string account = args[3];
+
+            if (inputAdminPwd != adminPassword)
+            {
+                player.SendConsoleMessage("管理员密码错误，删除失败", "red");
+                return;
+            }
+
+            if (Plugin.plugin.BadgeManager.DeleteBadge(account))
+            {
+                player.SendConsoleMessage($"称号账号 {account} 删除成功!", "green");
+            }
+            else
+            {
+                player.SendConsoleMessage("删除失败，账号不存在", "red");
+            }
+        }
+
+        private void HandleLogin(RExiled.API.Features.Player player, string account, string password)
+        {
+            var badge = Plugin.plugin.BadgeManager.Login(player, account, password);
+            if (badge != null)
+            {
+                string expireInfo = badge.ExpirationMonths == 0 ? "永久" : $"{badge.ExpirationMonths}个月";
+                player.SendConsoleMessage($"登录成功! 有效期: {expireInfo}。请务必妥善保管账号密码", "green");
+            }
+            else
+            {
+                player.SendConsoleMessage("登录失败，账号或密码错误，或账号已过期", "red");
+            }
+        }
+
+        private void HandleInfo(RExiled.API.Features.Player player, string account)
+        {
+            string info = Plugin.plugin.BadgeManager.GetAccountExpirationInfo(account);
+            player.SendConsoleMessage($"账号 {account} 的状态: {info}", "white");
         }
     }
 }
