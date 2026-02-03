@@ -19,7 +19,7 @@ namespace DreamPlugin
             try
             {
                 _listener = new HttpListener();
-                _listener.Prefixes.Add("http://*:80008/");
+                _listener.Prefixes.Add("http://*:8008/");
                 _listener.Start();
                 _running = true;
 

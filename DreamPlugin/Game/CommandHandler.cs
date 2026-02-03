@@ -67,7 +67,20 @@ namespace DreamPlugin.Game
 
             if (cmd.StartsWith("killme") || cmd.StartsWith("kl") || cmd.StartsWith("自杀"))
             {
-                ev.Player.Kill();
+                var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+
+                foreach (var pickup in pickups)
+                {
+                    if (pickup == null || pickup.gameObject == null)
+                        continue;
+
+                    if (pickup.Networkinfo.itemId == ItemType.Ammo556 || pickup.Networkinfo.itemId == ItemType.Ammo762 || pickup.Networkinfo.itemId == ItemType.Ammo9mm)
+                    {
+                        NetworkServer.Destroy(pickup.gameObject);
+                    }
+                }
+
+                ev.Player.Kill(DamageTypes.None);
                 return;
             }
 

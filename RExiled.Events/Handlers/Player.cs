@@ -19,6 +19,17 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<ChangedRoleEventArgs> ChangedRole;
 
+        public static event CustomEventHandler<HurtingEventArgs> Hurting;
+
+        public static event CustomEventHandler<DyingEventArgs> Dying;
+
+        public static event CustomEventHandler<ShootingEventArgs> Shooting;
+
+        public static void OnShooting(ShootingEventArgs ev) => Shooting.InvokeSafely(ev);
+
+        public static void OnHurting(HurtingEventArgs ev) => Hurting.InvokeSafely(ev);
+
+        public static void OnDying(DyingEventArgs ev) => Dying.InvokeSafely(ev);
         public static void OnChangingRole(ChangingRoleEventArgs ev) => ChangingRole.InvokeSafely(ev);
 
         public static void OnChangedRole(ChangedRoleEventArgs ev) => ChangedRole.InvokeSafely(ev);

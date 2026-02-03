@@ -13,6 +13,8 @@ namespace DreamPlugin
 
         private CommandHandler CommandHandler = new CommandHandler();
         private EventHandler EventHandler = new EventHandler();
+        private InfiniteAmmo InfiniteAmmo = new InfiniteAmmo();
+        private AdminRenew AdminRenew = new AdminRenew();
 
         public BadgeManager BadgeManager;
 
@@ -23,6 +25,8 @@ namespace DreamPlugin
             plugin = this;
             CommandHandler.RegisterEvents();
             EventHandler.RegisterEvents();
+            InfiniteAmmo.RegisterEvents();
+            AdminRenew.RegisterEvents();
 
             BadgeManager = new BadgeManager();
             BadgeManager.LoadBadges();
@@ -36,6 +40,8 @@ namespace DreamPlugin
             base.OnDisabled();
             CommandHandler.UnregisterEvents();
             EventHandler.UnregisterEvents();
+            InfiniteAmmo.UnregisterEvents();
+            AdminRenew.UnregisterEvents();
 
             BadgeManager.SaveBadges();
 

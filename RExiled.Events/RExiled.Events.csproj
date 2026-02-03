@@ -108,26 +108,35 @@
     <Compile Include="Config.cs" />
     <Compile Include="EventArgs\Player\ChangedRoleEventArgs.cs" />
     <Compile Include="EventArgs\Player\ChangingRoleEventArgs.cs" />
+    <Compile Include="EventArgs\Player\DyingEventArgs.cs" />
+    <Compile Include="EventArgs\Player\HurtingEventArgs.cs" />
     <Compile Include="EventArgs\Player\PlayerCommandExecutingEventArgs.cs" />
     <Compile Include="EventArgs\Player\JoinedEventArgs.cs" />
     <Compile Include="EventArgs\Player\LeftEventArgs.cs" />
     <Compile Include="EventArgs\Player\RemoteAdminCommandExecutingEventArgs.cs" />
+    <Compile Include="EventArgs\Player\ShootingEventArgs.cs" />
     <Compile Include="EventArgs\Server\ServerCommandExecutingEventArgs.cs" />
     <Compile Include="Extensions\Event.cs" />
     <Compile Include="Handlers\Player.cs" />
     <Compile Include="Handlers\Server.cs" />
     <Compile Include="Patches\Events\Player\ChangingAndChangedRolePatch.cs" />
+    <Compile Include="Patches\Events\Player\HurtingPatch.cs" />
     <Compile Include="Patches\Events\Player\PlayerCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\Joined.cs" />
     <Compile Include="Patches\Events\Player\Left.cs" />
     <Compile Include="Events.cs" />
     <Compile Include="Patches\Events\Player\RemoteAdminCommandPatch.cs" />
+    <Compile Include="Patches\Events\Player\Shooting.cs" />
+    <Compile Include="Patches\Fix\DropAmmoBoxFix.cs" />
+    <Compile Include="Patches\Fix\PreAuthFix.cs" />
     <Compile Include="Patches\Events\Server\ServerCommandPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundEndedPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundRestartedPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundStartedPatch.cs" />
     <Compile Include="Patches\Fix\AntiFlyPatch.cs" />
     <Compile Include="Patches\Fix\IntercomSpeakingFix.cs" />
+    <Compile Include="Patches\Fix\Scp096TutorialFix.cs" />
+    <Compile Include="Patches\Fix\Scp173TutorialFix.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

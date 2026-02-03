@@ -2,6 +2,7 @@
 using HarmonyLib;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs;
+using RExiled.Events.EventArgs.Player;
 
 namespace RExiled.Events.Patches.Events.Player
 {

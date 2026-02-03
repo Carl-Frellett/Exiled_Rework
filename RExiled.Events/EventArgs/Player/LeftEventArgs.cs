@@ -1,6 +1,6 @@
 ﻿using RExiled.API.Features;
 
-namespace RExiled.Events.EventArgs
+namespace RExiled.Events.EventArgs.Player
 {
     public class LeftEventArgs : JoinedEventArgs
     {

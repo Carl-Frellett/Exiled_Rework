@@ -3,6 +3,7 @@ using MEC;
 using RExiled.API.Enums;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs;
+using RExiled.Events.EventArgs.Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,7 +89,7 @@ namespace RExiled.Events
         {
             if (WasLastCheckIdle)
             {
-                Log.Info("Server activity detected. Resuming normal operation.");
+                Log.SendRaw("Server activity detected. Resuming normal operation.");
             }
             WasLastCheckIdle = false;
             IdleSent = false;
@@ -111,7 +112,7 @@ namespace RExiled.Events
                 if (isIdle && !WasLastCheckIdle)
                 {
                     LastActiveTime = DateTime.UtcNow;
-                    Log.Info("Server is now idle.");
+                    Log.SendRaw("Server is now idle.");
                 }
 
                 if (isIdle && WasLastCheckIdle)
@@ -120,7 +121,7 @@ namespace RExiled.Events
                     {
                         if (!IdleSent)
                         {
-                            Log.Info($"Server has been idle for {idleThresholdMinutes} minutes. Entering low-power mode!");
+                            Log.SendRaw($"Server has been idle for {idleThresholdMinutes} minutes. Entering low-power mode!");
                             IdleSent = true;
                         }
                         Time.timeScale = 0.01f;

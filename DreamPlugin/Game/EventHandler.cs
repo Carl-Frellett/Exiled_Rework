@@ -28,6 +28,8 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundRestarting;
+            RExiled.Events.Handlers.Player.Dying += OnPlayerDying;
+            RExiled.Events.Handlers.Player.Hurting += OnPlayerHurting;
 
             SCPHealthCoroutine = Timing.RunCoroutine(SCPHealth());
         }
@@ -39,6 +41,8 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundRestarting;
+            RExiled.Events.Handlers.Player.Dying -= OnPlayerDying;
+            RExiled.Events.Handlers.Player.Hurting -= OnPlayerHurting;
 
             PendingGiveItems.Clear();
         }
@@ -58,7 +62,6 @@ namespace DreamPlugin.Game
             _corpseTimer = 0f;
             _itemTimer = 0f;
             _cleanupUpdateCoroutine = Timing.RunCoroutine(CleanupUpdateRoutine(), Segment.LateUpdate);
-            Log.Info("[清理系统] 回合开始，启动清理计时器");
         }
 
         private void StopCleanup()
@@ -70,7 +73,6 @@ namespace DreamPlugin.Game
             _isRoundActive = false;
             _corpseTimer = 0f;
             _itemTimer = 0f;
-            Log.Info("[清理系统] 回合结束，清理计时器已重置");
         }
 
         private IEnumerator<float> CleanupUpdateRoutine()
@@ -151,19 +153,44 @@ namespace DreamPlugin.Game
         }
         #endregion
 
-        #region 回合事件
-
         private void OnRoundStarted()
         {
             StartCleanup();
-        }
 
+            Timing.CallDelayed(1.5f, () =>
+            {
+                string scpName = string.Empty;
+                int scpCount = 0;
+                foreach (var item in Player.List)
+                {
+                    if (item.IsSCP)
+                    {
+                        scpName += $"{item.Role.ToString()} ";
+                        scpCount++;
+                    }
+                }
+                Map.Broadcast(4,$"<size=30>此次收容失效 <color=yellow>共有{scpCount}个SCP突破收容: </color><color=red>{scpName}</color></size>");
+            });
+        }
+        public void OnPlayerHurting(HurtingEventArgs ev)
+        {
+            if (ev.HitInfo.GetDamageType() == DamageTypes.Scp207)
+            {
+                ev.HitInfo.Amount = 0.2f;
+            }
+        }
         private void OnRoundRestarting()
         {
             StopCleanup();
         }
-        #endregion
-
+        public void OnPlayerDying(DyingEventArgs ev)
+        {
+            if (ev.Target.IsSCP && ev.Attacker != null && !ev.Attacker.IsSCP)
+            {
+                Map.Broadcast(4,$"<size=30><color=yellow>玩家{ev.Attacker.Nickname}</color>收容了<color=red>{ev.Target.Role.ToString()}</color></size>");
+            }
+            CleanAmmoPickups();
+        }
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
             int newId;
@@ -181,7 +208,7 @@ namespace DreamPlugin.Game
 
             ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
 
-            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*鸟之诗.梦时镜怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>", true);
+            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>", true);
 
             ev.Player.RankName = string.Empty;
             Timing.CallDelayed(0.2f, () =>
@@ -198,62 +225,94 @@ namespace DreamPlugin.Game
         }
         public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
         {
-            if (ev.Player == null) return;
+            if (ev.Player == null)
+                return;
+
             int playerId = ev.Player.Id;
             RoleType newRole = ev.NewRole;
 
-            if (newRole != RoleType.ClassD && newRole != RoleType.ChaosInsurgency && newRole != RoleType.NtfCommander)
-            {
-                return;
-            }
-
             if (PendingGiveItems.Contains(playerId))
-            {
                 return;
-            }
 
             PendingGiveItems.Add(playerId);
+
             Timing.CallDelayed(0.2f, () =>
             {
                 PendingGiveItems.Remove(playerId);
-                if (ev.Player == null || ev.Player.Role != newRole) return;
 
-                if (newRole == RoleType.ClassD)
+                if (ev.Player == null || ev.Player.Role != newRole)
+                    return;
+
+                var player = ev.Player;
+
+                switch (newRole)
                 {
-                    ev.Player.AddItem(ItemType.KeycardJanitor);
-                    ev.Player.AddItem(ItemType.Medkit);
-                }
-                else if (newRole == RoleType.ChaosInsurgency)
-                {
-                    ev.Player.AddItem(ItemType.GunUSP);
-                    ev.Player.AddItem(ItemType.WeaponManagerTablet);
-                }
-                else if (newRole == RoleType.NtfCommander)
-                {
-                    ev.Player.AddItem(ItemType.Medkit);
-                }
-                else if (newRole == RoleType.NtfCadet)
-                {
-                    ev.Player.AddItem(ItemType.Adrenaline);
-                    ev.Player.AddItem(ItemType.GrenadeFlash);
-                }
-                else if (newRole == RoleType.NtfLieutenant)
-                {
-                    ev.Player.AddItem(ItemType.GunUSP);
-                    ev.Player.AddItem(ItemType.GrenadeFrag);
-                }
-                else if (newRole == RoleType.NtfScientist)
-                {
-                    ev.Player.AddItem(ItemType.GunUSP);
-                    ev.Player.AddItem(ItemType.GrenadeFrag);
-                }
-                else if (newRole == RoleType.FacilityGuard)
-                {
-                    ev.Player.AddItem(ItemType.GrenadeFrag);
+                    case RoleType.ClassD:
+                        player.AddItem(ItemType.KeycardJanitor);
+                        player.AddItem(ItemType.Adrenaline);
+                        break;
+
+                    case RoleType.Scientist:
+                        player.AddItem(ItemType.Adrenaline);
+                        break;
+
+                    case RoleType.ChaosInsurgency:
+                        player.AddItem(ItemType.GunUSP);
+                        player.AddItem(ItemType.WeaponManagerTablet);
+                        break;
+
+                    case RoleType.NtfCommander:
+                        player.AddItem(ItemType.Medkit);
+                        break;
+
+                    case RoleType.NtfCadet:
+                        var seniorCard = player.Inventory.items.FirstOrDefault(i => i.id == ItemType.KeycardSeniorGuard);
+                        if (seniorCard != null)
+                            player.RemoveItem(seniorCard);
+
+                        player.AddItem(ItemType.KeycardNTFLieutenant);
+                        player.AddItem(ItemType.Adrenaline);
+                        player.AddItem(ItemType.GrenadeFlash);
+                        break;
+
+                    case RoleType.NtfLieutenant:
+                        player.AddItem(ItemType.GunUSP);
+                        player.AddItem(ItemType.GrenadeFrag);
+                        break;
+
+                    case RoleType.NtfScientist:
+                        player.AddItem(ItemType.GunUSP);
+                        player.AddItem(ItemType.GrenadeFrag);
+                        break;
+
+                    case RoleType.FacilityGuard:
+                        player.AddItem(ItemType.GrenadeFrag);
+                        break;
                 }
             });
         }
+        private void CleanAmmoPickups()
+        {
+            try
+            {
+                var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
 
+                foreach (var pickup in pickups)
+                {
+                    if (pickup == null || pickup.gameObject == null)
+                        continue;
+
+                    if (pickup.Networkinfo.itemId == ItemType.Ammo556 || pickup.Networkinfo.itemId == ItemType.Ammo762 || pickup.Networkinfo.itemId == ItemType.Ammo9mm)
+                    {
+                        NetworkServer.Destroy(pickup.gameObject);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error($"[子弹清理] 清理失败: {ex}");
+            }
+        }
         private IEnumerator<float> SCPHealth()
         {
             while (true)

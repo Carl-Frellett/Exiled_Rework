@@ -8,6 +8,7 @@ namespace DreamPlugin
     public class Config : IConfig
     {
         public bool IsEnabled { get; set; } = true;
+        public int MaxMissedRounds { get; set; } = 1;
 
         [Description("管理员密码")]
         public string AdminPwd { get; set; } = "admin123";
