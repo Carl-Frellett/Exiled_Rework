@@ -6,6 +6,7 @@ namespace DreamPlugin
 {
     public class Plugin : Plugin<Config>
     {
+        // 燕然是啥骚气比
         public override string Name => "DreamPlugin";
         public override string Author => "Carl Frellett";
 
