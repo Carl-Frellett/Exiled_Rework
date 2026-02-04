@@ -1,9 +1,14 @@
 ﻿using DreamPlugin.Badge;
+using MEC;
 using Mirror;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
+using RExiled.Events.EventArgs.Server;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
+using UnityEngine;
 
 namespace DreamPlugin.Game
 {
@@ -12,13 +17,68 @@ namespace DreamPlugin.Game
         public void RegisterEvents()
         {
             RExiled.Events.Handlers.Player.PlayerCommandExecuting += OnPlayerCommandEnter;
+            RExiled.Events.Handlers.Server.ServerCommandExecuting += OnServerEnterCommand;
+            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting += OnRemoteAdminCommandExecuting;
         }
 
         public void UnregisterEvents()
         {
             RExiled.Events.Handlers.Player.PlayerCommandExecuting -= OnPlayerCommandEnter;
+            RExiled.Events.Handlers.Server.ServerCommandExecuting -= OnServerEnterCommand;
+            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting -= OnRemoteAdminCommandExecuting;
         }
 
+        public void OnServerEnterCommand(ServerCommandExecutingEventArgs ev)
+        {
+            if (ev.Command.StartsWith("restart") == true)
+            {
+                ev.IsAllowed = false;
+                Round.Restart();
+
+                Timing.CallDelayed(1.5f, Application.Quit);
+            }
+        }
+        public void OnRemoteAdminCommandExecuting(RemoteAdminCommandExecutingEventArgs ev)
+        {
+            string originalCommand = ev.Command;
+            string cmd = originalCommand.ToLower().Trim();
+
+            bool handled = false;
+
+            if (cmd == "clean r" || cmd == "cl r")
+            {
+                CleanCorpsesNow();
+                if (ev.Player != null)
+                    ev.Player.RemoteAdminMessage("已尝试清理所有尸体。", true);
+                handled = true;
+            }
+            else if (cmd == "clean i" || cmd == "cl i")
+            {
+                CleanItemsNow();
+                if (ev.Player != null)
+                    ev.Player.RemoteAdminMessage("已尝试清理所有地面物品。", true);
+                handled = true;
+            }
+            else if (cmd == "iamm t")
+            {
+                InfiniteAmmo.IsInfiniteAmmoEnabled = true;
+                if (ev.Player != null)
+                    ev.Player.RemoteAdminMessage("已启动 <b>真·无限子弹</b>", true);
+                handled = true;
+            }
+            else if (cmd == "iamm f")
+            {
+                InfiniteAmmo.IsInfiniteAmmoEnabled = false;
+                if (ev.Player != null)
+                    ev.Player.RemoteAdminMessage("已关闭 <b>真·无限子弹</b>", true);
+                handled = true;
+            }
+
+            if (handled)
+            {
+                ev.IsAllowed = false;
+            }
+        }
         public void OnPlayerCommandEnter(PlayerCommandExecutingEventArgs ev)
         {
             ev.IsAllowed = false;
@@ -37,7 +97,7 @@ namespace DreamPlugin.Game
                     ev.Player.SendConsoleMessage("不可发送空字符", "red");
                     return;
                 }
-                Map.Broadcast(5, $"<size=30>[聊天] {ev.Player.Nickname} 说: {msg}</size>");
+                BroadcastSystem.BroadcastSystem.ShowGlobal($"[聊天] {ev.Player.Nickname} 说: {msg}",5);
                 ev.Player.SendConsoleMessage("聊天消息发送成功", "green");
                 return;
             }
@@ -53,7 +113,7 @@ namespace DreamPlugin.Game
                 var teammates = Player.List.Where(p => p.Team == ev.Player.Team).ToList();
                 foreach (var p in teammates)
                 {
-                    p.Broadcast(5, $"<size=30>[阵营] {ev.Player.Nickname} 说: {msg}</size>");
+                    BroadcastSystem.BroadcastSystem.ShowToPlayer(p, $"[阵营] {ev.Player.Nickname} 说: {msg}",5);
                 }
                 ev.Player.SendConsoleMessage("阵营消息发送成功", "green");
                 return;
@@ -67,53 +127,22 @@ namespace DreamPlugin.Game
 
             if (cmd.StartsWith("killme") || cmd.StartsWith("kl") || cmd.StartsWith("自杀"))
             {
-                var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
-
-                foreach (var pickup in pickups)
-                {
-                    if (pickup == null || pickup.gameObject == null)
-                        continue;
-
-                    if (pickup.Networkinfo.itemId == ItemType.Ammo556 || pickup.Networkinfo.itemId == ItemType.Ammo762 || pickup.Networkinfo.itemId == ItemType.Ammo9mm)
-                    {
-                        NetworkServer.Destroy(pickup.gameObject);
-                    }
-                }
-
                 ev.Player.Kill(DamageTypes.None);
-                return;
-            }
-
-            if (cmd.StartsWith("clean ") || cmd.StartsWith("cl "))
-            {
-                if (!ev.Player.RemoteAdminAccess)
+                Timing.CallDelayed(1f, () =>
                 {
-                    ev.Player.SendConsoleMessage("权限不足！", "red");
-                    return;
-                }
+                    var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
 
-                string[] parts = cmd.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2)
-                {
-                    ev.Player.SendConsoleMessage("用法: clean <r/i> （r=尸体, i=物品）", "yellow");
-                    return;
-                }
+                    foreach (var pickup in pickups)
+                    {
+                        if (pickup == null || pickup.gameObject == null)
+                            continue;
 
-                string target = parts[1].ToLower();
-                switch (target)
-                {
-                    case "r":
-                        CleanCorpsesNow();
-                        ev.Player.SendConsoleMessage("已尝试清理所有尸体。", "green");
-                        break;
-                    case "i":
-                        CleanItemsNow();
-                        ev.Player.SendConsoleMessage("已尝试清理所有地面物品。", "green");
-                        break;
-                    default:
-                        ev.Player.SendConsoleMessage("无效参数！用法: clean r 或 clean i", "red");
-                        break;
-                }
+                        if (pickup.Networkinfo.itemId == ItemType.Ammo556 || pickup.Networkinfo.itemId == ItemType.Ammo762 || pickup.Networkinfo.itemId == ItemType.Ammo9mm)
+                        {
+                            NetworkServer.Destroy(pickup.gameObject);
+                        }
+                    }
+                });
                 return;
             }
 
@@ -299,7 +328,7 @@ namespace DreamPlugin.Game
                 }
                 if (count > 0)
                 {
-                    Map.Broadcast(4, $"<size=30>[手动清理] 已清理 {count} 具尸体</size>");
+                    BroadcastSystem.BroadcastSystem.ShowGlobal($"[手动清理] 已清理 {count} 具尸体");
                     Log.Info($"[手动清理] 已清理 {count} 具尸体");
                 }
                 else
@@ -327,9 +356,17 @@ namespace DreamPlugin.Game
                         count++;
                     }
                 }
+                var ragdolls = UnityEngine.Object.FindObjectsOfType<Ragdoll>();
+                foreach (var ragdoll in ragdolls)
+                {
+                    if (ragdoll != null && ragdoll.gameObject != null)
+                    {
+                        NetworkServer.Destroy(ragdoll.gameObject);
+                    }
+                }
                 if (count > 0)
                 {
-                    Map.Broadcast(4, $"<size=30>[手动清理] 已清理 {count} 个地面物品</size>");
+                    BroadcastSystem.BroadcastSystem.ShowGlobal($"[手动清理] 已清理 {count} 个地面物品");
                     Log.Info($"[手动清理] 已清理 {count} 个地面物品");
                 }
                 else

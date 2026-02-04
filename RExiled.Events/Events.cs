@@ -2,7 +2,6 @@
 using MEC;
 using RExiled.API.Enums;
 using RExiled.API.Features;
-using RExiled.Events.EventArgs;
 using RExiled.Events.EventArgs.Player;
 using System;
 using System.Collections.Generic;

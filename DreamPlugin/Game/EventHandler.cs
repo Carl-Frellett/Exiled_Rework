@@ -1,18 +1,14 @@
 ﻿using MEC;
 using Mirror;
 using RExiled.API.Features;
-using RExiled.Events.EventArgs;
 using RExiled.Events.EventArgs.Player;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace DreamPlugin.Game
 {
     public class EventHandler
     {
-        private static readonly HashSet<int> PendingGiveItems = new HashSet<int>();
-
         private CoroutineHandle SCPHealthCoroutine;
 
         private Dictionary<Player, Vector3> LastPos = new Dictionary<Player, Vector3>();
@@ -28,8 +24,8 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundRestarting;
-            RExiled.Events.Handlers.Player.Dying += OnPlayerDying;
             RExiled.Events.Handlers.Player.Hurting += OnPlayerHurting;
+            RExiled.Events.Handlers.Player.Died += OnPlayerDied;
 
             SCPHealthCoroutine = Timing.RunCoroutine(SCPHealth());
         }
@@ -41,10 +37,8 @@ namespace DreamPlugin.Game
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundRestarting;
-            RExiled.Events.Handlers.Player.Dying -= OnPlayerDying;
             RExiled.Events.Handlers.Player.Hurting -= OnPlayerHurting;
-
-            PendingGiveItems.Clear();
+            RExiled.Events.Handlers.Player.Died -= OnPlayerDied;
         }
 
         #region 清理
@@ -57,7 +51,7 @@ namespace DreamPlugin.Game
 
         private void StartCleanup()
         {
-            StopCleanup(); 
+            StopCleanup();
             _isRoundActive = true;
             _corpseTimer = 0f;
             _itemTimer = 0f;
@@ -116,7 +110,7 @@ namespace DreamPlugin.Game
                 }
                 if (count > 0)
                 {
-                    Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 具尸体</size>");
+                    BroadcastSystem.BroadcastSystem.ShowGlobal($"[清理系统] 已清理 {count} 具尸体");
                     Log.Info($"[清理系统] 已清理 {count} 具尸体");
                 }
             }
@@ -142,7 +136,7 @@ namespace DreamPlugin.Game
                 }
                 if (count > 0)
                 {
-                    Map.Broadcast(4, $"<size=30>[清理系统] 已清理 {count} 个地面物品</size>");
+                    BroadcastSystem.BroadcastSystem.ShowGlobal($"[清理系统] 已清理 {count} 个地面物品");
                     Log.Info($"[清理系统] 已清理 {count} 个地面物品");
                 }
             }
@@ -156,7 +150,18 @@ namespace DreamPlugin.Game
         private void OnRoundStarted()
         {
             StartCleanup();
+            var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
 
+            foreach (var pickup in pickups)
+            {
+                if (pickup == null || pickup.gameObject == null)
+                    continue;
+
+                if (pickup.Networkinfo.itemId == ItemType.Ammo556 || pickup.Networkinfo.itemId == ItemType.Ammo762 || pickup.Networkinfo.itemId == ItemType.Ammo9mm)
+                {
+                    NetworkServer.Destroy(pickup.gameObject);
+                }
+            }
             Timing.CallDelayed(1.5f, () =>
             {
                 string scpName = string.Empty;
@@ -169,25 +174,34 @@ namespace DreamPlugin.Game
                         scpCount++;
                     }
                 }
-                Map.Broadcast(4,$"<size=30>此次收容失效 <color=yellow>共有{scpCount}个SCP突破收容: </color><color=red>{scpName}</color></size>");
+                BroadcastSystem.BroadcastSystem.ShowGlobal($"此次收容失效 <color=yellow>共有{scpCount}个SCP突破收容: </color><color=red>{scpName}</color>");
             });
-        }
-        public void OnPlayerHurting(HurtingEventArgs ev)
-        {
-            if (ev.HitInfo.GetDamageType() == DamageTypes.Scp207)
-            {
-                ev.HitInfo.Amount = 0.2f;
-            }
         }
         private void OnRoundRestarting()
         {
             StopCleanup();
         }
-        public void OnPlayerDying(DyingEventArgs ev)
+        public void OnPlayerHurting(HurtingEventArgs ev)
         {
-            if (ev.Target.IsSCP && ev.Attacker != null && !ev.Attacker.IsSCP)
+            if (ev.DamageType == DamageTypes.Scp207)
             {
-                Map.Broadcast(4,$"<size=30><color=yellow>玩家{ev.Attacker.Nickname}</color>收容了<color=red>{ev.Target.Role.ToString()}</color></size>");
+                ev.Amount = 0.03f;
+            }
+
+            if (ev.DamageType == DamageTypes.Usp)
+            {
+                ev.Amount += new System.Random().Next(50, 150);
+            }
+            if (ev.DamageType == DamageTypes.MicroHid)
+            {
+                ev.Amount += new System.Random().Next(300, 400);
+            }
+        }
+        public void OnPlayerDied(DiedEventArgs ev)
+        {
+            if (ev.Target.IsSCP && ev.Killer != null && !ev.Killer.IsSCP)
+            {
+                BroadcastSystem.BroadcastSystem.ShowGlobal($"<color=yellow>玩家{ev.Killer.Nickname}</color>收容了<color=red>{ev.Target.Role.ToString()}</color>");
             }
             CleanAmmoPickups();
         }
@@ -208,7 +222,7 @@ namespace DreamPlugin.Game
 
             ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
 
-            Map.Broadcast(4, $"<size=30>欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·怀旧服*</color>\n欢迎加入Q群: 801888832\n当前服务器人数: {Player.List?.Count()}</size>", true);
+            BroadcastSystem.BroadcastSystem.ShowGlobal($"欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·怀旧服*</color>");
 
             ev.Player.RankName = string.Empty;
             Timing.CallDelayed(0.2f, () =>
@@ -225,68 +239,104 @@ namespace DreamPlugin.Game
         }
         public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
         {
-            if (ev.Player == null)
-                return;
+            List<ItemType> Cld = new List<ItemType>()
+            {
+                ItemType.KeycardJanitor,
+                ItemType.Adrenaline
+            };
 
-            int playerId = ev.Player.Id;
-            RoleType newRole = ev.NewRole;
+            List<ItemType> Slt = new List<ItemType>()
+            {
+                ItemType.KeycardScientist,
+                ItemType.Adrenaline,
+                ItemType.Painkillers
+            };
 
-            if (PendingGiveItems.Contains(playerId))
-                return;
+            List<ItemType> CI = new List<ItemType>()
+            {
+                ItemType.GunLogicer,
+                ItemType.GunUSP,
+                ItemType.KeycardChaosInsurgency,
+                ItemType.WeaponManagerTablet,
+                ItemType.Medkit,
+                ItemType.Painkillers,
+                ItemType.GrenadeFrag,
+                ItemType.GrenadeFlash,
+            };
 
-            PendingGiveItems.Add(playerId);
+            List<ItemType> Ntc = new List<ItemType>()
+            {
+                ItemType.GunE11SR,
+                ItemType.KeycardNTFCommander,
+                ItemType.WeaponManagerTablet,
+                ItemType.Radio,
+                ItemType.Disarmer,
+                ItemType.Adrenaline,
+                ItemType.Medkit,
+                ItemType.GrenadeFrag,
+            };
+
+            List<ItemType> Ntct = new List<ItemType>()
+            {
+                ItemType.GunProject90,
+                ItemType.KeycardNTFLieutenant,
+                ItemType.WeaponManagerTablet,
+                ItemType.Radio,
+                ItemType.Disarmer,
+                ItemType.Medkit,
+                ItemType.GrenadeFrag,
+            };
+
+            List<ItemType> ntl = new List<ItemType>()
+            {
+                ItemType.GunE11SR,
+                ItemType.KeycardNTFLieutenant,
+                ItemType.WeaponManagerTablet,
+                ItemType.Radio,
+                ItemType.Disarmer,
+                ItemType.Medkit,
+                ItemType.GrenadeFrag,
+            };
+
+            List<ItemType> fg = new List<ItemType>()
+            {
+                ItemType.GunMP7,
+                ItemType.KeycardGuard,
+                ItemType.WeaponManagerTablet,
+                ItemType.Radio,
+                ItemType.Disarmer,
+                ItemType.Medkit,
+                ItemType.GrenadeFrag,
+                ItemType.GrenadeFlash,
+            };
 
             Timing.CallDelayed(0.2f, () =>
             {
-                PendingGiveItems.Remove(playerId);
-
-                if (ev.Player == null || ev.Player.Role != newRole)
-                    return;
-
-                var player = ev.Player;
-
-                switch (newRole)
+                switch (ev.NewRole)
                 {
                     case RoleType.ClassD:
-                        player.AddItem(ItemType.KeycardJanitor);
-                        player.AddItem(ItemType.Adrenaline);
+                        ev.Player.ResetInventory(Cld);
                         break;
-
                     case RoleType.Scientist:
-                        player.AddItem(ItemType.Adrenaline);
+                        ev.Player.ResetInventory(Slt);
                         break;
-
                     case RoleType.ChaosInsurgency:
-                        player.AddItem(ItemType.GunUSP);
-                        player.AddItem(ItemType.WeaponManagerTablet);
+                        ev.Player.ResetInventory(CI);
                         break;
-
                     case RoleType.NtfCommander:
-                        player.AddItem(ItemType.Medkit);
+                        ev.Player.ResetInventory(Ntc);
                         break;
-
                     case RoleType.NtfCadet:
-                        var seniorCard = player.Inventory.items.FirstOrDefault(i => i.id == ItemType.KeycardSeniorGuard);
-                        if (seniorCard != null)
-                            player.RemoveItem(seniorCard);
-
-                        player.AddItem(ItemType.KeycardNTFLieutenant);
-                        player.AddItem(ItemType.Adrenaline);
-                        player.AddItem(ItemType.GrenadeFlash);
+                        ev.Player.ResetInventory(Ntct);
                         break;
-
                     case RoleType.NtfLieutenant:
-                        player.AddItem(ItemType.GunUSP);
-                        player.AddItem(ItemType.GrenadeFrag);
+                        ev.Player.ResetInventory(ntl);
                         break;
-
                     case RoleType.NtfScientist:
-                        player.AddItem(ItemType.GunUSP);
-                        player.AddItem(ItemType.GrenadeFrag);
+                        ev.Player.ResetInventory(ntl);
                         break;
-
                     case RoleType.FacilityGuard:
-                        player.AddItem(ItemType.GrenadeFrag);
+                        ev.Player.ResetInventory(fg);
                         break;
                 }
             });

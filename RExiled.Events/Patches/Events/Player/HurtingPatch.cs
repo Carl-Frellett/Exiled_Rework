@@ -1,58 +1,119 @@
 ﻿using HarmonyLib;
-using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RExiled.Events.Patches.Events.Player
 {
     [HarmonyPatch(typeof(PlayerStats), nameof(PlayerStats.HurtPlayer))]
-    internal static class Hurting
+    internal class HurtingPatch
     {
-        public static void Prefix(PlayerStats __instance, ref PlayerStats.HitInfo info, GameObject go)
+        internal static readonly HashSet<int> DeathProcessing = new HashSet<int>();
+
+        public static bool Prefix(ref PlayerStats.HitInfo info, GameObject go)
         {
-            try
+            if (go == null) return true;
+
+            RExiled.API.Features.Player target = RExiled.API.Features.Player.Get(go);
+            if (target == null) return true;
+
+            RExiled.API.Features.Player attacker = null;
+            if (!string.IsNullOrEmpty(info.Attacker))
             {
-                if (go == null)
-                    return;
-
-                var target = RExiled.API.Features.Player.Get(go);
-                if (target == null)
-                    return;
-
-                RExiled.API.Features.Player attacker = null;
-                GameObject attackerGo = info.GetPlayerObject();
-
-                if (attackerGo != null)
+                if (int.TryParse(info.Attacker, out int attackerId))
                 {
-                    var attackerHub = ReferenceHub.GetHub(attackerGo);
-                    if (attackerHub != null)
-                        attacker = RExiled.API.Features.Player.Get(attackerHub);
+                    GameObject attackerGo = info.GetPlayerObject();
+                    if (attackerGo != null)
+                    {
+                        attacker = RExiled.API.Features.Player.Get(attackerGo);
+                    }
                 }
-
-                var hurtingEv = new HurtingEventArgs(attacker, target, ref info);
-                Handlers.Player.OnHurting(hurtingEv);
-
-                if (hurtingEv.HitInfo.Amount <= 0f)
-                    return;
-
-                bool isDying = !target.IsGodModeEnabled && (target.Health - hurtingEv.HitInfo.Amount) < 1f;
-                if (hurtingEv.HitInfo.Amount < 0f && !target.IsGodModeEnabled)
+                else if (info.Attacker != "ARTIFICIALDEGEN")
                 {
-                    isDying = true;
-                }
-                if (isDying)
-                {
-                    var dyingEv = new DyingEventArgs(attacker, target, ref info);
-                    Handlers.Player.OnDying(dyingEv);
-
-                    if (dyingEv.HitInfo.Amount <= 0f)
-                        return;
+                    GameObject attackerGo = info.GetPlayerObject();
+                    if (attackerGo != null)
+                    {
+                        attacker = RExiled.API.Features.Player.Get(attackerGo);
+                    }
                 }
             }
-            catch (System.Exception ex)
+
+            var hurtingEv = new HurtingEventArgs(attacker, target, ref info);
+            RExiled.Events.Handlers.Player.OnHurting(hurtingEv);
+
+            if (!hurtingEv.IsAllowed)
+                return false;
+
+            info.Amount = hurtingEv.Amount;
+
+            if (info.GetDamageType() == DamageTypes.Pocket)
             {
-                Log.Error($"[RExiled] Hurting patch error: {ex}");
+                if (info.Amount <= 0f) return true;
             }
+
+            if (info.GetDamageType() == DamageTypes.Falldown)
+            {
+                if (info.Amount <= 0f) return true;
+            }
+
+            if (info.Amount <= 0f)
+                return true;
+
+            return true;
+        }
+
+        public static void Postfix(GameObject go, PlayerStats.HitInfo info)
+        {
+            if (go == null) return;
+
+            RExiled.API.Features.Player target = RExiled.API.Features.Player.Get(go);
+            if (target == null) return;
+
+            RExiled.API.Features.Player attacker = null;
+            GameObject attackerGo = info.GetPlayerObject();
+            if (attackerGo != null)
+            {
+                attacker = RExiled.API.Features.Player.Get(attackerGo);
+            }
+
+            var hurtEv = new HurtEventArgs(attacker, target, info.Amount, info.GetDamageType());
+            RExiled.Events.Handlers.Player.OnHurt(hurtEv);
+
+            if (target.IsDead)
+            {
+                DeathProcessing.Remove(target.Id);
+
+                var diedEv = new DiedEventArgs(attacker, target, info.GetDamageType());
+                RExiled.Events.Handlers.Player.OnDied(diedEv);
+            }
+            else if (DeathProcessing.Contains(target.Id))
+            {
+                DeathProcessing.Remove(target.Id);
+            }
+        }
+
+        private static bool CheckIfDying(RExiled.API.Features.Player target, float damageAmount, PlayerStats.HitInfo hitInfo)
+        {
+            if (target.IsGodModeEnabled) return false;
+
+            if (hitInfo.GetDamageType() == DamageTypes.Grenade && !target.ReferenceHub.characterClassManager.IsAnyScp())
+                return true;
+
+            float health = target.Health;
+            float artificial = target.ReferenceHub.playerStats.unsyncedArtificialHealth;
+            float ratio = target.ReferenceHub.playerStats.artificialNormalRatio;
+
+            if (artificial > 0f && hitInfo.Attacker != "ARTIFICIALDEGEN")
+            {
+                float reduced = damageAmount * ratio;
+                float remainder = damageAmount - reduced;
+                float finalArtificial = artificial - reduced;
+                if (finalArtificial < 0f)
+                    remainder += Mathf.Abs(finalArtificial);
+                return (health - remainder) < 1f;
+            }
+
+            return (health - damageAmount) < 1f;
         }
     }
 }

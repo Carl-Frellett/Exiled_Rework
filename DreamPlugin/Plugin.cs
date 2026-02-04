@@ -1,5 +1,7 @@
 ﻿using DreamPlugin.Badge;
 using DreamPlugin.Game;
+using DreamPlugin.Game.PlayerRole;
+using MEC;
 using RExiled.API.Features;
 
 namespace DreamPlugin
@@ -15,11 +17,14 @@ namespace DreamPlugin
         private CommandHandler CommandHandler = new CommandHandler();
         private EventHandler EventHandler = new EventHandler();
         private InfiniteAmmo InfiniteAmmo = new InfiniteAmmo();
-        private AdminRenew AdminRenew = new AdminRenew();
+        private SCP073 SCP073 = new SCP073();
+        private SCP550 SCP550 = new SCP550();
+
+        private BigGuard BigGuard = new BigGuard();
 
         public BadgeManager BadgeManager;
-
         private WebServer _webServer;
+
         public override void OnEnabled()
         {
             base.OnEnabled();
@@ -27,13 +32,18 @@ namespace DreamPlugin
             CommandHandler.RegisterEvents();
             EventHandler.RegisterEvents();
             InfiniteAmmo.RegisterEvents();
-            AdminRenew.RegisterEvents();
+            BigGuard.RegisterEvents();
+            SCP073.RegisterEvents();
+            SCP550.RegisterEvents();
 
             BadgeManager = new BadgeManager();
             BadgeManager.LoadBadges();
 
-            _webServer = new WebServer();
-            _webServer.Start();
+            Timing.CallDelayed(5f, () =>
+            {
+                _webServer = new WebServer();
+                _webServer.Start();
+            });
         }
 
         public override void OnDisabled()
@@ -42,7 +52,9 @@ namespace DreamPlugin
             CommandHandler.UnregisterEvents();
             EventHandler.UnregisterEvents();
             InfiniteAmmo.UnregisterEvents();
-            AdminRenew.UnregisterEvents();
+            BigGuard.UnregisterEvents();
+            SCP073.UnregisterEvents();
+            SCP550 = new SCP550();
 
             BadgeManager.SaveBadges();
 

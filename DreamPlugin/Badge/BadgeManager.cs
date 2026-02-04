@@ -1,7 +1,7 @@
-﻿using RExiled.API.Features;
-using DreamPlugin.Badge.Controller;
+﻿using DreamPlugin.Badge.Controller;
 using DreamPlugin.Badge.Model;
 using Newtonsoft.Json;
+using RExiled.API.Features;
 using System;
 using System.Collections.Generic;
 using System.IO;

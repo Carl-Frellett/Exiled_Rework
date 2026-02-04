@@ -1,7 +1,4 @@
-﻿using System;
-using RExiled.API.Features;
-
-namespace RExiled.Events.EventArgs.Player
+﻿namespace RExiled.Events.EventArgs.Player
 {
     public class HurtingEventArgs : System.EventArgs
     {
@@ -9,13 +6,15 @@ namespace RExiled.Events.EventArgs.Player
         {
             Attacker = attacker;
             Target = target;
-            HitInfo = hitInfo;
+            Amount = hitInfo.Amount;
+            DamageType = hitInfo.GetDamageType();
+            IsAllowed = true;
         }
 
         public RExiled.API.Features.Player Attacker { get; }
         public RExiled.API.Features.Player Target { get; }
-        public ref PlayerStats.HitInfo HitInfo => ref hitInfo;
-
-        private PlayerStats.HitInfo hitInfo;
+        public float Amount { get; set; }
+        public DamageTypes.DamageType DamageType { get; }
+        public bool IsAllowed { get; set; }
     }
 }

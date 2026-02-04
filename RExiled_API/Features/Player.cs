@@ -101,6 +101,10 @@ namespace RExiled.API.Features
 
         #region 网络
         /// <summary>
+        /// 玩家是否已经加入
+        /// </summary>
+        public bool IsJoin { get; set; } = false;
+        /// <summary>
         /// 获取玩家是否为Host
         /// </summary>
         public bool IsHost => ReferenceHub.characterClassManager.IsHost;
@@ -133,6 +137,7 @@ namespace RExiled.API.Features
             set
             {
                 ReferenceHub.nicknameSync.Network_myNickSync = value;
+                ReferenceHub.nicknameSync.SetNick(value);
                 BlinkTag();
             }
         }

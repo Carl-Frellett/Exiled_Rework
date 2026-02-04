@@ -1,7 +1,6 @@
 ﻿using System;
 using HarmonyLib;
 using RExiled.API.Features;
-using RExiled.Events.EventArgs;
 using RExiled.Events.EventArgs.Player;
 
 namespace RExiled.Events.Patches.Events.Player
@@ -23,17 +22,20 @@ namespace RExiled.Events.Patches.Events.Player
                 if (hub.nicknameSync.Network_myNickSync == "Dedicated Server")
                     return;
 
-                if (RExiled.API.Features.Player.Dictionary.ContainsKey(__instance.gameObject))
-                    return;
+                if (!RExiled.API.Features.Player.Dictionary.TryGetValue(__instance.gameObject, out var player))
+                {
+                    player = new RExiled.API.Features.Player(hub);
+                    RExiled.API.Features.Player.Dictionary[__instance.gameObject] = player;
+                    RExiled.API.Features.Player.IdsCache[player.Id] = player;
+                }
 
-                var player = new RExiled.API.Features.Player(hub);
-                RExiled.API.Features.Player.Dictionary[__instance.gameObject] = player;
-                RExiled.API.Features.Player.IdsCache[player.Id] = player;
-
-                var ev = new JoinedEventArgs(player);
-                Handlers.Player.OnJoined(ev);
-
-                Log.SendRaw($"Player {player.Nickname} ({player.Id}) ({player.IPAddress}) joined LOGTYPE2");
+                if (!player.IsJoin)
+                {
+                    player.IsJoin = true;
+                    var ev = new JoinedEventArgs(player);
+                    Handlers.Player.OnJoined(ev);
+                    Log.SendRaw($"Player {player.Nickname} ({player.Id}) ({player.IPAddress}) joined LOGTYPE2");
+                }
             }
             catch (Exception ex)
             {

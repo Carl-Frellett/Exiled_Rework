@@ -15,24 +15,32 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<RemoteAdminCommandExecutingEventArgs> RemoteAdminCommandExecuting;
 
-        public static event CustomEventHandler<ChangingRoleEventArgs> ChangingRole;
+        public static event CustomEventHandler<ShootingEventArgs> Shooting;
 
         public static event CustomEventHandler<ChangedRoleEventArgs> ChangedRole;
 
+        public static event CustomEventHandler<SpawningTeamEventArgs> SpawningTeam;
+
+        public static event CustomEventHandler<SpawnedTeamEventArgs> SpawnedTeam;
+
         public static event CustomEventHandler<HurtingEventArgs> Hurting;
 
-        public static event CustomEventHandler<DyingEventArgs> Dying;
+        public static event CustomEventHandler<HurtEventArgs> Hurt;
 
-        public static event CustomEventHandler<ShootingEventArgs> Shooting;
+        public static event CustomEventHandler<DiedEventArgs> Died;
 
-        public static void OnShooting(ShootingEventArgs ev) => Shooting.InvokeSafely(ev);
+        internal static void OnHurting(HurtingEventArgs ev) => Hurting?.Invoke(ev);
 
-        public static void OnHurting(HurtingEventArgs ev) => Hurting.InvokeSafely(ev);
+        internal static void OnHurt(HurtEventArgs ev) => Hurt?.Invoke(ev);
 
-        public static void OnDying(DyingEventArgs ev) => Dying.InvokeSafely(ev);
-        public static void OnChangingRole(ChangingRoleEventArgs ev) => ChangingRole.InvokeSafely(ev);
+        internal static void OnDied(DiedEventArgs ev) => Died?.Invoke(ev);
+        public static void OnSpawningTeam(SpawningTeamEventArgs ev) => SpawningTeam.InvokeSafely(ev);
+
+        public static void OnSpawnedTeam(SpawnedTeamEventArgs ev) => SpawnedTeam.InvokeSafely(ev);
 
         public static void OnChangedRole(ChangedRoleEventArgs ev) => ChangedRole.InvokeSafely(ev);
+
+        public static void OnShooting(ShootingEventArgs ev) => Shooting.InvokeSafely(ev);
 
         public static void OnRemoteAdminCommandExecuting(RemoteAdminCommandExecutingEventArgs ev) => RemoteAdminCommandExecuting.InvokeSafely(ev);
 
