@@ -70,7 +70,7 @@ namespace DreamPlugin.Game.PlayerRole
             {
                 Scp073CurrentPlayer.ResetInventory(Scp073Items);
             });
-            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp073CurrentPlayer,"[个人消息] 你是<color=blue>SCP-073</color> <i>该隐</i>",5);
+            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp073CurrentPlayer, "[个人消息] 你是<color=blue>SCP-073</color> <i>该隐</i> <i>对伤害有抗性, 对攻击有增强</i>", 5);
 
             string currentRank = Scp073CurrentPlayer.RankName?.Trim() ?? "";
             if (string.IsNullOrEmpty(currentRank))
@@ -147,7 +147,7 @@ namespace DreamPlugin.Game.PlayerRole
 
             if (ev.Target == Scp073CurrentPlayer)
             {
-                ev.Amount = ev.Amount - (ev.Amount * 0.3f);
+                ev.Amount *= 0.4f;
             }
         }
 
@@ -158,7 +158,6 @@ namespace DreamPlugin.Game.PlayerRole
 
             if (ev.Player == Scp073CurrentPlayer)
             {
-                // 角色变更时清除称号
                 string currentRank = ev.Player.RankName ?? "";
                 const string scp073Tag = "SCP-073";
                 const string separatorTag = " | SCP-073";

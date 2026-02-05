@@ -57,20 +57,22 @@ namespace DreamPlugin.Game.PlayerRole
             }
             Scp550CurrentPlayer = ply;
             Scp550CurrentPlayer.SetRole(RoleType.Tutorial, true);
-            Scp550CurrentPlayer.MaxHealth = 500;
-            Scp550CurrentPlayer.Health = 300;
+            Scp550CurrentPlayer.MaxHealth = 1000;
+            Scp550CurrentPlayer.Health = 500;
             Scp550CurrentPlayer.AdrenalineHealth += 50;
             List<ItemType> Scp550Items = new List<ItemType>()
             {
-            ItemType.GunMP7,
-            ItemType.KeycardChaosInsurgency
+            ItemType.GunE11SR,
+            ItemType.GrenadeFlash,
+            ItemType.KeycardNTFLieutenant,
+            ItemType.Adrenaline
             };
-            Timing.CallDelayed(0.5f, () =>
+            Timing.CallDelayed(0.3f, () =>
             {
                 Scp550CurrentPlayer.ResetInventory(Scp550Items);
                 Scp550CurrentPlayer.Position = Map.GetRandomSpawnPoint(RoleType.ChaosInsurgency);
             });
-            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你是<color=red>SCP-550</color>", 5);
+            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你是<color=red>SCP-550</color> <i>击杀回血, 且对伤害有抗性</i>", 5);
             string currentRank = Scp550CurrentPlayer.RankName?.Trim() ?? "";
             if (string.IsNullOrEmpty(currentRank))
             {
@@ -136,7 +138,7 @@ namespace DreamPlugin.Game.PlayerRole
             if (ev.Player == Scp550CurrentPlayer && ev.Pickup.ItemId.IsMedical())
             {
                 ev.IsAllowed = false;
-                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你不可以使用医疗物品");
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你不可以拾取医疗物品");
             }
         }
         public void OnHurting(HurtingEventArgs ev)
@@ -149,6 +151,10 @@ namespace DreamPlugin.Game.PlayerRole
             if (ev.Target.IsSCP && ev.Attacker == Scp550CurrentPlayer)
             {
                 ev.IsAllowed = false;
+            }
+            if (ev.Target == Scp550CurrentPlayer || !ev.Attacker.IsSCP)
+            {
+                ev.Amount *= 0.5f;
             }
         }
 
@@ -210,15 +216,15 @@ namespace DreamPlugin.Game.PlayerRole
                 target.RankName = newRank;
 
                 Scp550CurrentPlayer = null;
-                RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
-
                 BroadcastSystem.BroadcastSystem.ShowGlobal("<color=red>SCP-550</color>已被收容!", 5);
+                RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
             }
 
             if (ev.Killer != null && ev.Killer == Scp550CurrentPlayer)
             {
-                ev.Killer.Health = Mathf.Min(ev.Killer.Health + 30, 500);
-                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 击杀玩家 <color=green>+30HP</color>");
+                int health = 85;
+                ev.Killer.Health = Mathf.Min(ev.Killer.Health + health, 500);
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, $"[个人消息] 击杀玩家 <color=green>+{health}HP</color>");
             }
         }
     }

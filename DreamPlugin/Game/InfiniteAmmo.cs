@@ -20,18 +20,29 @@ namespace DreamPlugin.Game
 
         public void OnPlayerShooting(ShootingEventArgs ev)
         {
-            if (ev.Shooter == null)
+            if (ev.Shooter == null || ev.Shooter.CurrentItem == null)
                 return;
 
             if (IsInfiniteAmmoEnabled)
             {
-                ev.Shooter.SetWeaponAmmo(ev.Shooter.CurrentItem, 65535);
+                if (ev.Shooter.CurrentItem.GetWeaponAmmo() <= 0)
+                {
+                    ev.Shooter.SetWeaponAmmo(ev.Shooter.CurrentItem, int.MaxValue);
+                }
             }
             else
             {
-                ev.Shooter.SetAmmo(AmmoType.Nato9, 114514);
-                ev.Shooter.SetAmmo(AmmoType.Nato762, 114514);
-                ev.Shooter.SetAmmo(AmmoType.Nato556, 114514);
+                const int desiredAmmo = 114514;
+                const int threshold = 100;
+
+                foreach (var ammoType in new[] { AmmoType.Nato9, AmmoType.Nato762, AmmoType.Nato556 })
+                {
+                    int currentAmmo = ev.Shooter.GetAmmo(ammoType);
+                    if (currentAmmo < threshold)
+                    {
+                        ev.Shooter.SetAmmo(ammoType, desiredAmmo);
+                    }
+                }
             }
         }
     }

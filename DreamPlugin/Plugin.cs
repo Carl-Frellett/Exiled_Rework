@@ -39,11 +39,8 @@ namespace DreamPlugin
             BadgeManager = new BadgeManager();
             BadgeManager.LoadBadges();
 
-            Timing.CallDelayed(5f, () =>
-            {
-                _webServer = new WebServer();
-                _webServer.Start();
-            });
+            _webServer = new WebServer();
+            _webServer.Start();
         }
 
         public override void OnDisabled()

@@ -199,9 +199,9 @@ namespace DreamPlugin.Game
         }
         public void OnPlayerDied(DiedEventArgs ev)
         {
-            if (ev.Target.IsSCP && ev.Killer != null && !ev.Killer.IsSCP)
+            if (ev.Target.IsSCP)
             {
-                BroadcastSystem.BroadcastSystem.ShowGlobal($"<color=yellow>玩家{ev.Killer.Nickname}</color>收容了<color=red>{ev.Target.Role.ToString()}</color>");
+                BroadcastSystem.BroadcastSystem.ShowGlobal($"<color=yellow>玩家{ev.Killer.Nickname}</color>收容了<color=red>{ev?.Target?.Role.ToString()}</color>");
             }
             CleanAmmoPickups();
         }
@@ -267,11 +267,11 @@ namespace DreamPlugin.Game
             List<ItemType> Ntc = new List<ItemType>()
             {
                 ItemType.GunE11SR,
+                ItemType.GunUSP,
                 ItemType.KeycardNTFCommander,
                 ItemType.WeaponManagerTablet,
                 ItemType.Radio,
                 ItemType.Disarmer,
-                ItemType.Adrenaline,
                 ItemType.Medkit,
                 ItemType.GrenadeFrag,
             };
@@ -279,17 +279,18 @@ namespace DreamPlugin.Game
             List<ItemType> Ntct = new List<ItemType>()
             {
                 ItemType.GunProject90,
+                ItemType.GunCOM15,
                 ItemType.KeycardNTFLieutenant,
                 ItemType.WeaponManagerTablet,
                 ItemType.Radio,
                 ItemType.Disarmer,
                 ItemType.Medkit,
-                ItemType.GrenadeFrag,
             };
 
             List<ItemType> ntl = new List<ItemType>()
             {
                 ItemType.GunE11SR,
+                ItemType.GunUSP,
                 ItemType.KeycardNTFLieutenant,
                 ItemType.WeaponManagerTablet,
                 ItemType.Radio,
@@ -310,7 +311,7 @@ namespace DreamPlugin.Game
                 ItemType.GrenadeFlash,
             };
 
-            Timing.CallDelayed(0.2f, () =>
+            Timing.CallDelayed(0.5f, () =>
             {
                 switch (ev.NewRole)
                 {
