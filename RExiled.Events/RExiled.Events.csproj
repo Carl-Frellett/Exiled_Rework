@@ -111,6 +111,7 @@
     <Compile Include="EventArgs\Player\DiedEventArgs.cs" />
     <Compile Include="EventArgs\Player\HurtEventArgs.cs" />
     <Compile Include="EventArgs\Player\HurtingEventArgs.cs" />
+    <Compile Include="EventArgs\Player\PickingUpItemEventArgs.cs" />
     <Compile Include="EventArgs\Player\PlayerCommandExecutingEventArgs.cs" />
     <Compile Include="EventArgs\Player\JoinedEventArgs.cs" />
     <Compile Include="EventArgs\Player\LeftEventArgs.cs" />
@@ -124,6 +125,7 @@
     <Compile Include="Handlers\Server.cs" />
     <Compile Include="Patches\Events\Player\ChangingRolePatch.cs" />
     <Compile Include="Patches\Events\Player\HurtingPatch.cs" />
+    <Compile Include="Patches\Events\Player\PickingUpItem.cs" />
     <Compile Include="Patches\Events\Player\PlayerCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\Joined.cs" />
     <Compile Include="Patches\Events\Player\Left.cs" />

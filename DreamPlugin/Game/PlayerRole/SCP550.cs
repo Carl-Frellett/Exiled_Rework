@@ -1,10 +1,9 @@
 ﻿using MEC;
-using RExiled.API.Enums;
+using RExiled.API.Extensions;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace DreamPlugin.Game.PlayerRole
@@ -20,6 +19,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Hurting += OnHurting;
             RExiled.Events.Handlers.Player.Died += OnDied;
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
+            RExiled.Events.Handlers.Player.PickingUpItem += OnPickItem;
         }
         public void UnregisterEvents()
         {
@@ -28,6 +28,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Hurting -= OnHurting;
             RExiled.Events.Handlers.Player.Died -= OnDied;
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
+            RExiled.Events.Handlers.Player.PickingUpItem -= OnPickItem;
         }
 
         public void OnRAsp550(RemoteAdminCommandExecutingEventArgs ev)
@@ -64,12 +65,12 @@ namespace DreamPlugin.Game.PlayerRole
             ItemType.GunMP7,
             ItemType.KeycardChaosInsurgency
             };
-            Timing.CallDelayed(0.2f, () =>
+            Timing.CallDelayed(0.5f, () =>
             {
                 Scp550CurrentPlayer.ResetInventory(Scp550Items);
+                Scp550CurrentPlayer.Position = Map.GetRandomSpawnPoint(RoleType.ChaosInsurgency);
             });
             BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你是<color=red>SCP-550</color>", 5);
-            Scp550CurrentPlayer.Position = Map.GetRandomSpawnPoint(RoleType.ChaosInsurgency);
             string currentRank = Scp550CurrentPlayer.RankName?.Trim() ?? "";
             if (string.IsNullOrEmpty(currentRank))
             {
@@ -127,11 +128,20 @@ namespace DreamPlugin.Game.PlayerRole
                 }
             });
         }
+        public void OnPickItem(PickingUpItemEventArgs ev)
+        {
+            if (ev.Player == null)
+                return;
 
+            if (ev.Player == Scp550CurrentPlayer && ev.Pickup.ItemId.IsMedical())
+            {
+                ev.IsAllowed = false;
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你不可以使用医疗物品");
+            }
+        }
         public void OnHurting(HurtingEventArgs ev)
         {
             if (ev.Attacker == null || ev.Target == null) return;
-
             if (ev.Attacker.IsSCP && ev.Target == Scp550CurrentPlayer)
             {
                 ev.IsAllowed = false;
@@ -208,6 +218,7 @@ namespace DreamPlugin.Game.PlayerRole
             if (ev.Killer != null && ev.Killer == Scp550CurrentPlayer)
             {
                 ev.Killer.Health = Mathf.Min(ev.Killer.Health + 30, 500);
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 击杀玩家 <color=green>+30HP</color>");
             }
         }
     }

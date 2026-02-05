@@ -29,6 +29,10 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<DiedEventArgs> Died;
 
+        public static event CustomEventHandler<PickingUpItemEventArgs> PickingUpItem;
+
+        public static void OnPickingUpItem(PickingUpItemEventArgs ev) => PickingUpItem?.InvokeSafely(ev);
+
         internal static void OnHurting(HurtingEventArgs ev) => Hurting?.Invoke(ev);
 
         internal static void OnHurt(HurtEventArgs ev) => Hurt?.Invoke(ev);
