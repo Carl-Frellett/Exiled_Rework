@@ -84,6 +84,7 @@
     <Compile Include="Game\InfiniteAmmo.cs" />
     <Compile Include="Game\PlayerRole\BigGuard.cs" />
     <Compile Include="Game\PlayerRole\SCP073.cs" />
+    <Compile Include="Game\PlayerRole\SCP204.cs" />
     <Compile Include="Game\PlayerRole\SCP550.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -109,8 +110,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="CustomRole\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

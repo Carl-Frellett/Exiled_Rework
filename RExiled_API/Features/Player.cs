@@ -300,6 +300,20 @@ namespace RExiled.API.Features
 
         #region 管理员
         /// <summary>
+        /// 设置权限
+        /// </summary>
+        public void SetGroup(GameObject player, string Permission)
+        {
+            ServerRoles component3 = player.GetComponent<ServerRoles>();
+            component3.PublicKeyAccepted = true;
+            if (component3.PublicKeyAccepted)
+            {
+                UserGroup userGroup = null;
+                userGroup = ServerStatic.PermissionsHandler.GetGroup(Permission);
+                component3.SetGroup(userGroup, ovr: false, byAdmin: true);
+            }
+        }
+        /// <summary>
         /// 获取玩家是否为管理员。
         /// </summary>
         public bool RemoteAdminAccess => ReferenceHub.serverRoles.RemoteAdmin;

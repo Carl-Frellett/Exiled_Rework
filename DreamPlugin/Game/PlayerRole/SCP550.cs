@@ -5,6 +5,7 @@ using RExiled.Events.EventArgs.Player;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Assets._Scripts.Dissonance;
 
 namespace DreamPlugin.Game.PlayerRole
 {
@@ -55,10 +56,11 @@ namespace DreamPlugin.Game.PlayerRole
             {
                 return;
             }
+
             Scp550CurrentPlayer = ply;
             Scp550CurrentPlayer.SetRole(RoleType.Tutorial, true);
-            Scp550CurrentPlayer.MaxHealth = 1000;
-            Scp550CurrentPlayer.Health = 500;
+            Scp550CurrentPlayer.MaxHealth = 2000;
+            Scp550CurrentPlayer.Health = 1000;
             Scp550CurrentPlayer.AdrenalineHealth += 50;
             List<ItemType> Scp550Items = new List<ItemType>()
             {
@@ -84,7 +86,6 @@ namespace DreamPlugin.Game.PlayerRole
             }
             RExiled.Events.Handlers.Player.ChangedRole += OnChangeRole;
         }
-
         public void OnPlayerLeft(LeftEventArgs ev)
         {
             if (ev.Player == Scp550CurrentPlayer)
@@ -152,9 +153,13 @@ namespace DreamPlugin.Game.PlayerRole
             {
                 ev.IsAllowed = false;
             }
-            if (ev.Target == Scp550CurrentPlayer || !ev.Attacker.IsSCP)
+            if (ev.Target == Scp550CurrentPlayer && !ev.Attacker.IsSCP)
             {
                 ev.Amount *= 0.5f;
+            }
+            if (ev.Target == Scp550CurrentPlayer && ev.DamageType == DamageTypes.Falldown)
+            {
+                ev.IsAllowed = false;
             }
         }
 
@@ -181,7 +186,6 @@ namespace DreamPlugin.Game.PlayerRole
                     newRank = newRank.Substring(0, newRank.Length - 2).Trim();
 
                 ev.Player.RankName = newRank;
-
                 Scp550CurrentPlayer = null;
                 RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
             }
@@ -223,7 +227,7 @@ namespace DreamPlugin.Game.PlayerRole
             if (ev.Killer != null && ev.Killer == Scp550CurrentPlayer)
             {
                 int health = 85;
-                ev.Killer.Health = Mathf.Min(ev.Killer.Health + health, 500);
+                ev.Killer.Health = Mathf.Min(ev.Killer.Health + health, 2000);
                 BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, $"[个人消息] 击杀玩家 <color=green>+{health}HP</color>");
             }
         }

@@ -73,6 +73,55 @@ namespace DreamPlugin.Game
                     ev.Player.RemoteAdminMessage("已关闭 <b>真·无限子弹</b>", true);
                 handled = true;
             }
+            else if (cmd.StartsWith("stg "))
+            {
+                string[] args = cmd.Substring(4).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (args.Length != 2)
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>用法: stg <玩家ID> <权限组名称></color>", true);
+                    handled = true;
+                    return;
+                }
+
+                string playerIdStr = args[0];
+                string groupName = args[1];
+
+                Player target = null;
+                if (int.TryParse(playerIdStr, out int playerId))
+                {
+                    target = Player.Get(playerId);
+                }
+
+                if (target == null)
+                {
+                    ev.Player?.RemoteAdminMessage($"<color=red>未找到 ID 为 {playerIdStr} 的玩家。</color>", true);
+                    handled = true;
+                    return;
+                }
+
+                var hub = target.ReferenceHub;
+                if (hub == null)
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>无法获取目标玩家的 Hub。</color>", true);
+                    handled = true;
+                    return;
+                }
+
+                try
+                {
+                    target?.SetGroup(target?.GameObject, groupName);
+                    string successMsg = $"已将玩家 <b>{target.Nickname}</b> 的权限组设置为 <b>{groupName}</b>";
+                    ev.Player?.RemoteAdminMessage(successMsg, true);
+                    target.RemoteAdminMessage($"你的权限组已被设置为 <b>{groupName}</b>", true);
+                }
+                catch (Exception ex)
+                {
+                    ev.Player?.RemoteAdminMessage($"<color=red>设置权限组失败: {ex.Message}</color>", true);
+                }
+
+                handled = true;
+            }
 
             if (handled)
             {
@@ -104,17 +153,37 @@ namespace DreamPlugin.Game
 
             if (cmd.StartsWith("c "))
             {
-                string msg = cmd.Substring(2);
-                if (msg == string.Empty || msg == "" || msg == " ")
+                string msg = cmd.Substring(2).Trim();
+                if (string.IsNullOrEmpty(msg))
                 {
                     ev.Player.SendConsoleMessage("不可发送空字符", "red");
                     return;
                 }
-                var teammates = Player.List.Where(p => p.Team == ev.Player.Team).ToList();
-                foreach (var p in teammates)
+
+                LogicalTeam senderTeam = GetLogicalTeam(ev.Player);
+                List<Player> receivers;
+
+                if (senderTeam == LogicalTeam.None)
                 {
-                    BroadcastSystem.BroadcastSystem.ShowToPlayer(p, $"[阵营] {ev.Player.Nickname} 说: {msg}",5);
+                    receivers = new List<Player> { ev.Player };
                 }
+                else
+                {
+                    receivers = new List<Player>();
+                    foreach (Player p in Player.List)
+                    {
+                        if (GetLogicalTeam(p) == senderTeam)
+                        {
+                            receivers.Add(p);
+                        }
+                    }
+                }
+
+                foreach (Player p in receivers)
+                {
+                    BroadcastSystem.BroadcastSystem.ShowToPlayer(p, $"[阵营] {ev.Player.Nickname} 说: {msg}", 5);
+                }
+
                 ev.Player.SendConsoleMessage("阵营消息发送成功", "green");
                 return;
             }
@@ -153,7 +222,60 @@ namespace DreamPlugin.Game
 
             ev.Player.SendConsoleMessage("未知指令!", "red");
         }
+        public enum LogicalTeam
+        {
+            None,
+            MtfScientist,
+            ChaosDClass,
+            Scp
+        }
+        private LogicalTeam GetLogicalTeam(Player player)
+        {
+            if (player == null)
+                return LogicalTeam.None;
 
+            RoleType role = player.Role;
+
+            if (player == DreamPlugin.Plugin.plugin.SCP073.Scp073CurrentPlayer)
+            {
+                return LogicalTeam.Scp;
+            }
+
+            if (role == RoleType.None || role == RoleType.Spectator || role == RoleType.Tutorial)
+            {
+                return LogicalTeam.None;
+            }
+
+            if (role == RoleType.Scientist ||
+                role == RoleType.NtfScientist ||
+                role == RoleType.NtfCadet ||
+                role == RoleType.NtfLieutenant ||
+                role == RoleType.NtfCommander ||
+                role == RoleType.FacilityGuard)
+            {
+                return LogicalTeam.MtfScientist;
+            }
+
+            if (role == RoleType.ClassD ||
+                role == RoleType.ChaosInsurgency)
+            {
+                return LogicalTeam.ChaosDClass;
+            }
+
+            if (role == RoleType.Scp173 ||
+                role == RoleType.Scp106 ||
+                role == RoleType.Scp049 ||
+                role == RoleType.Scp079 ||
+                role == RoleType.Scp096 ||
+                role == RoleType.Scp0492 ||
+                role == RoleType.Scp93953 ||
+                role == RoleType.Scp93989)
+            {
+                return LogicalTeam.Scp;
+            }
+
+            return LogicalTeam.None;
+        }
         private void HandleBadgeCommand(PlayerCommandExecutingEventArgs ev)
         {
             var args = ev.Command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);

@@ -188,13 +188,13 @@ namespace DreamPlugin.Game
                 ev.Amount = 0.03f;
             }
 
-            if (ev.DamageType == DamageTypes.Usp)
+            if (ev.DamageType == DamageTypes.Usp && ev.Target.Team != Team.SCP && ev.Target != Plugin.plugin.SCP073.Scp073CurrentPlayer)
             {
                 ev.Amount += new System.Random().Next(50, 150);
             }
             if (ev.DamageType == DamageTypes.MicroHid)
             {
-                ev.Amount += new System.Random().Next(300, 400);
+                ev.Amount += new System.Random().Next(300, 800);
             }
         }
         public void OnPlayerDied(DiedEventArgs ev)
