@@ -1,7 +1,6 @@
 ﻿using DreamPlugin.Badge;
 using DreamPlugin.Game;
 using DreamPlugin.Game.PlayerRole;
-using DreamPlugin.Game.SCP204;
 using MEC;
 using RExiled.API.Features;
 
@@ -19,8 +18,7 @@ namespace DreamPlugin
         private EventHandler EventHandler = new EventHandler();
         private InfiniteAmmo InfiniteAmmo = new InfiniteAmmo();
         public SCP073 SCP073 = new SCP073();
-        private SCP550 SCP550 = new SCP550();
-        public SCP204 SCP204 = new SCP204();
+        public SCP550 SCP550 = new SCP550();
 
         private BigGuard BigGuard = new BigGuard();
 
@@ -37,7 +35,6 @@ namespace DreamPlugin
             BigGuard.RegisterEvents();
             SCP073.RegisterEvents();
             SCP550.RegisterEvents();
-            SCP204.RegisterEvents();
 
             BadgeManager = new BadgeManager();
             BadgeManager.LoadBadges();
@@ -55,7 +52,6 @@ namespace DreamPlugin
             BigGuard.UnregisterEvents();
             SCP073.UnregisterEvents();
             SCP550.UnregisterEvents();
-            SCP204.UnregisterEvents();
 
             BadgeManager.SaveBadges();
 

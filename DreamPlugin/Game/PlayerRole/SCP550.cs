@@ -21,6 +21,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Died += OnDied;
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Player.PickingUpItem += OnPickItem;
+            RExiled.Events.Handlers.Player.PocketDimensionEnter += OnEnterPocket;
         }
         public void UnregisterEvents()
         {
@@ -30,6 +31,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Died -= OnDied;
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Player.PickingUpItem -= OnPickItem;
+            RExiled.Events.Handlers.Player.PocketDimensionEnter -= OnEnterPocket;
         }
 
         public void OnRAsp550(RemoteAdminCommandExecutingEventArgs ev)
@@ -59,22 +61,20 @@ namespace DreamPlugin.Game.PlayerRole
 
             Scp550CurrentPlayer = ply;
             Scp550CurrentPlayer.SetRole(RoleType.Tutorial, true);
-            Scp550CurrentPlayer.MaxHealth = 2000;
-            Scp550CurrentPlayer.Health = 1000;
-            Scp550CurrentPlayer.AdrenalineHealth += 50;
+            Scp550CurrentPlayer.MaxHealth = 950;
+            Scp550CurrentPlayer.Health = 300;
             List<ItemType> Scp550Items = new List<ItemType>()
             {
-            ItemType.GunE11SR,
+            ItemType.GunProject90,
             ItemType.GrenadeFlash,
-            ItemType.KeycardNTFLieutenant,
-            ItemType.Adrenaline
+            ItemType.KeycardNTFLieutenant
             };
             Timing.CallDelayed(0.3f, () =>
             {
                 Scp550CurrentPlayer.ResetInventory(Scp550Items);
                 Scp550CurrentPlayer.Position = Map.GetRandomSpawnPoint(RoleType.ChaosInsurgency);
             });
-            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你是<color=red>SCP-550</color> <i>击杀回血, 且对伤害有抗性</i>", 5);
+            BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你是<color=red>SCP-550</color> <i>击杀回血</i>", 5);
             string currentRank = Scp550CurrentPlayer.RankName?.Trim() ?? "";
             if (string.IsNullOrEmpty(currentRank))
             {
@@ -141,7 +141,23 @@ namespace DreamPlugin.Game.PlayerRole
                 ev.IsAllowed = false;
                 BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你不可以拾取医疗物品");
             }
+            if (ev.Player == Scp550CurrentPlayer && ev.Pickup.ItemId == ItemType.MicroHID)
+            {
+                ev.IsAllowed = false;
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, "[个人消息] 你不可以拾取此物品");
+            }
         }
+        public void OnEnterPocket(PocketDimensionEnterEventArgs ev)
+        {
+            if (ev.Player == null)
+                return;
+
+            if (ev.Player == Scp550CurrentPlayer)
+            {
+                ev.IsAllow = false;
+            }
+        }
+
         public void OnHurting(HurtingEventArgs ev)
         {
             if (ev.Attacker == null || ev.Target == null) return;
@@ -152,10 +168,6 @@ namespace DreamPlugin.Game.PlayerRole
             if (ev.Target.IsSCP && ev.Attacker == Scp550CurrentPlayer)
             {
                 ev.IsAllowed = false;
-            }
-            if (ev.Target == Scp550CurrentPlayer && !ev.Attacker.IsSCP)
-            {
-                ev.Amount *= 0.5f;
             }
             if (ev.Target == Scp550CurrentPlayer && ev.DamageType == DamageTypes.Falldown)
             {
@@ -199,6 +211,7 @@ namespace DreamPlugin.Game.PlayerRole
 
             if (target == Scp550CurrentPlayer)
             {
+                BroadcastSystem.BroadcastSystem.ShowGlobal("<color=red>SCP-550</color>已被收容!", 5);
                 string currentRank = Scp550CurrentPlayer.RankName ?? "";
                 const string scp550Tag = "SCP-550";
                 const string separatorTag = " | SCP-550";
@@ -220,14 +233,13 @@ namespace DreamPlugin.Game.PlayerRole
                 target.RankName = newRank;
 
                 Scp550CurrentPlayer = null;
-                BroadcastSystem.BroadcastSystem.ShowGlobal("<color=red>SCP-550</color>已被收容!", 5);
                 RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
             }
 
             if (ev.Killer != null && ev.Killer == Scp550CurrentPlayer)
             {
-                int health = 85;
-                ev.Killer.Health = Mathf.Min(ev.Killer.Health + health, 2000);
+                int health = 30;
+                ev.Killer.Health = Mathf.Min(ev.Killer.Health + health, 950);
                 BroadcastSystem.BroadcastSystem.ShowToPlayer(Scp550CurrentPlayer, $"[个人消息] 击杀玩家 <color=green>+{health}HP</color>");
             }
         }

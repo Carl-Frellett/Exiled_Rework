@@ -35,6 +35,10 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<ItemDroppedEventArgs> ItemDropped;
 
+        public static event CustomEventHandler<PocketDimensionEnterEventArgs> PocketDimensionEnter;
+
+        public static void OnPocketDimensionEnter(PocketDimensionEnterEventArgs ev) => PocketDimensionEnter.InvokeSafely(ev);
+
         public static void OnItemDropped(ItemDroppedEventArgs ev) => ItemDropped?.InvokeSafely(ev);
 
         public static void OnDroppingItem(DroppingItemEventArgs ev) => DroppingItem?.InvokeSafely(ev);

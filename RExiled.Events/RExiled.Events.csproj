@@ -117,6 +117,7 @@
     <Compile Include="EventArgs\Player\PlayerCommandExecutingEventArgs.cs" />
     <Compile Include="EventArgs\Player\JoinedEventArgs.cs" />
     <Compile Include="EventArgs\Player\LeftEventArgs.cs" />
+    <Compile Include="EventArgs\Player\PocketDimensionEnterEventArgs.cs" />
     <Compile Include="EventArgs\Player\RemoteAdminCommandExecutingEventArgs.cs" />
     <Compile Include="EventArgs\Player\ShootingEventArgs.cs" />
     <Compile Include="EventArgs\Player\SpawnedTeamEventArgs.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Patches\Events\Player\Joined.cs" />
     <Compile Include="Patches\Events\Player\Left.cs" />
     <Compile Include="Events.cs" />
+    <Compile Include="Patches\Events\Player\PocketDimensionEnter.cs" />
     <Compile Include="Patches\Events\Player\RemoteAdminCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\Shooting.cs" />
     <Compile Include="Patches\Events\Player\TeamRespawnPatch.cs" />

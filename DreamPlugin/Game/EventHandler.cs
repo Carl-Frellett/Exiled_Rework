@@ -190,11 +190,11 @@ namespace DreamPlugin.Game
 
             if (ev.DamageType == DamageTypes.Usp && ev.Target.Team != Team.SCP && ev.Target != Plugin.plugin.SCP073.Scp073CurrentPlayer)
             {
-                ev.Amount += new System.Random().Next(50, 150);
+                ev.Amount += new System.Random().Next(50, 99);
             }
             if (ev.DamageType == DamageTypes.MicroHid)
             {
-                ev.Amount += new System.Random().Next(300, 800);
+                ev.Amount += new System.Random().Next(300, 900);
             }
         }
         public void OnPlayerDied(DiedEventArgs ev)
@@ -307,7 +307,6 @@ namespace DreamPlugin.Game
                 ItemType.Radio,
                 ItemType.Disarmer,
                 ItemType.Medkit,
-                ItemType.GrenadeFrag,
                 ItemType.GrenadeFlash,
             };
 
@@ -372,31 +371,43 @@ namespace DreamPlugin.Game
                 {
                     if (!player.IsSCP) continue;
 
-                    if (!LastPos.ContainsKey(player))
-                    {
-                        LastPos[player] = player.Position;
-                        KeepPosTime[player] = 0f;
-                    }
-                    else
-                    {
-                        if (Vector3.Distance(player.Position, LastPos[player]) < 0.1f)
-                        {
-                            KeepPosTime[player] += 1f;
+                    ProcessHealing(player);
+                }
 
-                            if (KeepPosTime[player] > 5 && player.Health < player.MaxHealth)
-                            {
-                                float healAmount = player.Role == RoleType.Scp106 ? 1f : 3f;
-                                player.Health = Mathf.Min(player.Health + healAmount, player.MaxHealth);
-                            }
-                        }
-                        else
-                        {
-                            LastPos[player] = player.Position;
-                            KeepPosTime[player] = 0f;
-                        }
+                var scp550Player = Plugin.plugin?.SCP550?.Scp550CurrentPlayer;
+                if (scp550Player != null && scp550Player.ReferenceHub != null)
+                {
+                    ProcessHealing(scp550Player);
+                }
+
+                yield return Timing.WaitForSeconds(1f);
+            }
+        }
+
+        private void ProcessHealing(Player player)
+        {
+            if (!LastPos.ContainsKey(player))
+            {
+                LastPos[player] = player.Position;
+                KeepPosTime[player] = 0f;
+            }
+            else
+            {
+                if (Vector3.Distance(player.Position, LastPos[player]) < 0.1f)
+                {
+                    KeepPosTime[player] += 1f;
+
+                    if (KeepPosTime[player] > 5 && player.Health < player.MaxHealth)
+                    {
+                        float healAmount = player.Role == RoleType.Scp106 ? 1f : 3f;
+                        player.Health = Mathf.Min(player.Health + healAmount, player.MaxHealth);
                     }
                 }
-                yield return Timing.WaitForSeconds(1f);
+                else
+                {
+                    LastPos[player] = player.Position;
+                    KeepPosTime[player] = 0f;
+                }
             }
         }
     }
