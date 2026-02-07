@@ -82,6 +82,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Game\EventHandler.cs" />
     <Compile Include="Game\InfiniteAmmo.cs" />
+    <Compile Include="Game\InventoryAccess.cs" />
     <Compile Include="Game\PlayerRole\BigGuard.cs" />
     <Compile Include="Game\PlayerRole\SCP073.cs" />
     <Compile Include="Game\PlayerRole\SCP6000.cs" />

@@ -2,7 +2,7 @@
 
 namespace RExiled.API.Features
 {
-    public static class Cassie
+    public class Cassie
     {
         private static MTFRespawn _mtfRespawn;
         public static MTFRespawn mtfRespawn

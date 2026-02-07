@@ -190,7 +190,7 @@ namespace DreamPlugin.Game
 
             if (ev.DamageType == DamageTypes.Usp && ev.Target.Team != Team.SCP && ev.Target != Plugin.plugin.SCP073.Scp073CurrentPlayer)
             {
-                ev.Amount += new System.Random().Next(50, 99);
+                ev.Amount += new System.Random().Next(50, 120);
             }
             if (ev.DamageType == DamageTypes.MicroHid)
             {

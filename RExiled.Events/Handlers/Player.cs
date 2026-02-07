@@ -37,6 +37,26 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<PocketDimensionEnterEventArgs> PocketDimensionEnter;
 
+        public static event CustomEventHandler<LockerInteractingEventArgs> LockerInteracting;
+
+        public static event CustomEventHandler<WarheadPanelInteractingEventArgs> WarheadPanelInteracting;
+
+        public static event CustomEventHandler<GeneratorDoorOpeningEventArgs> GeneratorDoorOpening;
+
+        public static event CustomEventHandler<GeneratorDoorClosingEventArgs> GeneratorDoorClosing;
+
+        public static event CustomEventHandler<DoorInteractingEventArgs> DoorInteracting;
+
+        public static void OnLockerInteracting(LockerInteractingEventArgs ev) => LockerInteracting?.InvokeSafely(ev);
+
+        public static void OnWarheadPanelInteracting(WarheadPanelInteractingEventArgs ev) => WarheadPanelInteracting?.InvokeSafely(ev);
+
+        public static void OnGeneratorDoorOpening(GeneratorDoorOpeningEventArgs ev) => GeneratorDoorOpening?.InvokeSafely(ev);
+
+        public static void OnGeneratorDoorClosing(GeneratorDoorClosingEventArgs ev) => GeneratorDoorClosing?.InvokeSafely(ev);
+
+        public static void OnDoorInteracting(DoorInteractingEventArgs ev) => DoorInteracting?.InvokeSafely(ev);
+
         public static void OnPocketDimensionEnter(PocketDimensionEnterEventArgs ev) => PocketDimensionEnter.InvokeSafely(ev);
 
         public static void OnItemDropped(ItemDroppedEventArgs ev) => ItemDropped?.InvokeSafely(ev);

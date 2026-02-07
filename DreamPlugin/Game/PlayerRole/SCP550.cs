@@ -156,6 +156,10 @@ namespace DreamPlugin.Game.PlayerRole
             {
                 ev.IsAllow = false;
             }
+            else
+            {
+                ev.IsAllow = true;
+            }
         }
 
         public void OnHurting(HurtingEventArgs ev)
@@ -212,6 +216,7 @@ namespace DreamPlugin.Game.PlayerRole
             if (target == Scp550CurrentPlayer)
             {
                 BroadcastSystem.BroadcastSystem.ShowGlobal("<color=red>SCP-550</color>已被收容!", 5);
+                Cassie.CassieMessage("S C P 5 5 0 successfully terminated by work", false,true);
                 string currentRank = Scp550CurrentPlayer.RankName ?? "";
                 const string scp550Tag = "SCP-550";
                 const string separatorTag = " | SCP-550";

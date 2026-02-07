@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Assets._Scripts.Dissonance;
+using RExiled.API.Enums;
 
 namespace DreamPlugin.Game.PlayerRole
 {
     public class SCP6000
     {
         public Player SCP6000CurrentPlayer = null;
+        private CoroutineHandle addcoin;
 
         public void RegisterEvents()
         {
@@ -20,6 +22,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Died += OnDied;
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Player.PickingUpItem += OnPickItem;
+            RExiled.Events.Handlers.Player.ItemDropped += OnDropItem;
         }
         public void UnregisterEvents()
         {
@@ -28,6 +31,7 @@ namespace DreamPlugin.Game.PlayerRole
             RExiled.Events.Handlers.Player.Died -= OnDied;
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Player.PickingUpItem -= OnPickItem;
+            RExiled.Events.Handlers.Player.ItemDropped -= OnDropItem;
         }
 
         public void OnRAsp6000(RemoteAdminCommandExecutingEventArgs ev)
@@ -56,6 +60,7 @@ namespace DreamPlugin.Game.PlayerRole
             }
 
             SCP6000CurrentPlayer = ply;
+            SCP6000CurrentPlayer.SetRole(RoleType.ClassD,true);
             List<ItemType> SCP6000Items = new List<ItemType>()
             {
             ItemType.KeycardJanitor,
@@ -64,10 +69,6 @@ namespace DreamPlugin.Game.PlayerRole
             ItemType.Coin,
             ItemType.Coin
             };
-            Timing.CallDelayed(0.3f, () =>
-            {
-                SCP6000CurrentPlayer.ResetInventory(SCP6000Items);
-            });
             BroadcastSystem.BroadcastSystem.ShowToPlayer(SCP6000CurrentPlayer, "[个人消息] 你是<color=red>SCP-6000</color> <i>丢弃硬币可传送</i>", 5);
             string currentRank = SCP6000CurrentPlayer.RankName?.Trim() ?? "";
             if (string.IsNullOrEmpty(currentRank))
@@ -78,6 +79,11 @@ namespace DreamPlugin.Game.PlayerRole
             {
                 SCP6000CurrentPlayer.RankName += " | SCP-6000";
             }
+            addcoin = Timing.RunCoroutine(CoinGivingCoroutine());
+            Timing.CallDelayed(0.3f, () =>
+            {
+                SCP6000CurrentPlayer.ResetInventory(SCP6000Items);
+            });
             RExiled.Events.Handlers.Player.ChangedRole += OnChangeRole;
         }
         public void OnPlayerLeft(LeftEventArgs ev)
@@ -104,6 +110,7 @@ namespace DreamPlugin.Game.PlayerRole
 
                 ev.Player.RankName = newRank;
 
+                Timing.KillCoroutines(addcoin);
                 SCP6000CurrentPlayer = null;
                 RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
             }
@@ -111,16 +118,24 @@ namespace DreamPlugin.Game.PlayerRole
 
         public void OnRoundStart()
         {
-            Timing.CallDelayed(1.5f, () =>
+            Timing.CallDelayed(1.7f, () =>
             {
-                if (Player.List.Count() >= 10 && SCP6000CurrentPlayer == null)
+                if (Player.List.Count() >= 5 && SCP6000CurrentPlayer == null)
                 {
-                    var SCP6000s = Player.List.Where(p => p.Role == RoleType.ClassD).ToList();
+                    var scp550Player = Plugin.plugin.SCP550.Scp550CurrentPlayer;
 
-                    if (SCP6000s.Count > 0)
+                    var eligibleClassDs = Player.List
+                        .Where(p => p.Role == RoleType.ClassD && p != scp550Player)
+                        .ToList();
+
+                    if (eligibleClassDs.Count > 0)
                     {
-                        var SCP6000 = SCP6000s[UnityEngine.Random.Range(0, SCP6000s.Count)];
-                        SpawnSCP6000(SCP6000);
+                        var selectedPlayer = eligibleClassDs[UnityEngine.Random.Range(0, eligibleClassDs.Count)];
+                        SpawnSCP6000(selectedPlayer);
+                    }
+                    else
+                    {
+                        Log.Warn("没有符合条件的 ClassD 玩家可选为 SCP-6000");
                     }
                 }
             });
@@ -136,14 +151,89 @@ namespace DreamPlugin.Game.PlayerRole
                 BroadcastSystem.BroadcastSystem.ShowToPlayer(SCP6000CurrentPlayer, "[个人消息] 你不可以拾取硬币");
             }
         }
-        public void OnDropItem(DroppingItemEventArgs ev)
+        public void OnDropItem(ItemDroppedEventArgs ev)
         {
             if (ev.Player == null)
                 return;
 
-            if (ev.Player == SCP6000CurrentPlayer)
-            { 
+            if (ev.Player == SCP6000CurrentPlayer && ev.ItemId == ItemType.Coin)
+            {
+                if (Warhead.IsDetonated == true)
+                {
+                    TeleportPlayerToRandomPlayer();
+                }
+                else
+                {
+                    TeleportToRandomRoom();
+                }
             }
+        }
+
+        private IEnumerator<float> CoinGivingCoroutine()
+        {
+            while (true)
+            {
+                yield return Timing.WaitForSeconds(120f);
+
+                if (SCP6000CurrentPlayer == null || !SCP6000CurrentPlayer.IsAlive)
+                {
+                    yield break;
+                }
+
+                SCP6000CurrentPlayer.AddItem(ItemType.Coin);
+                BroadcastSystem.BroadcastSystem.ShowToPlayer(SCP6000CurrentPlayer, "[个人消息] <color=yellow>获得一枚硬币！</color>", 4);
+            }
+        }
+
+        public void TeleportPlayerToRandomPlayer()
+        {
+            if (SCP6000CurrentPlayer == null)
+            {
+                return;
+            }
+
+            var candidates = Player.List
+                .Where(p => p != SCP6000CurrentPlayer && p.IsAlive)
+                .ToList();
+
+            if (candidates.Count == 0)
+            {
+                return;
+            }
+
+            Player randomPlayer = candidates[Random.Range(0, candidates.Count)];
+
+            Vector3 offset = new Vector3(0f, 0f, 0f);
+            SCP6000CurrentPlayer.Position = randomPlayer.Position + offset;
+        }
+
+        public void TeleportToRandomRoom()
+        {
+            if (SCP6000CurrentPlayer == null)
+            {
+                return;
+            }
+
+            var rooms = Map.Rooms;
+            if (rooms == null || rooms.Count == 0)
+            {
+                return;
+            }
+
+            var validRooms = rooms.Where(r => r.Type != RoomType.Unknown && r.Type != RoomType.Surface && r.Type != RoomType.EzShelter).ToList();
+
+            if (validRooms.Count == 0)
+            {
+                validRooms = rooms.ToList();
+            }
+
+            Room randomRoom = validRooms[UnityEngine.Random.Range(0, validRooms.Count)];
+
+            Vector3 spawnPos = randomRoom.Position;
+
+            spawnPos.y += 3.5f;
+
+            SCP6000CurrentPlayer.Position = spawnPos;
         }
         public void OnChangeRole(ChangedRoleEventArgs ev)
         {
@@ -168,6 +258,7 @@ namespace DreamPlugin.Game.PlayerRole
                     newRank = newRank.Substring(0, newRank.Length - 2).Trim();
 
                 ev.Player.RankName = newRank;
+                Timing.KillCoroutines(addcoin);
                 SCP6000CurrentPlayer = null;
                 RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;
             }
@@ -201,6 +292,7 @@ namespace DreamPlugin.Game.PlayerRole
 
                 target.RankName = newRank;
 
+                Timing.KillCoroutines(addcoin);
                 SCP6000CurrentPlayer = null;
                 BroadcastSystem.BroadcastSystem.ShowGlobal("<color=red>SCP-6000</color>已被收容!", 5);
                 RExiled.Events.Handlers.Player.ChangedRole -= OnChangeRole;

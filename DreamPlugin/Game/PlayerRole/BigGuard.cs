@@ -29,7 +29,7 @@ namespace DreamPlugin.Game.PlayerRole
                     {
                         var randomGuard = guards[UnityEngine.Random.Range(0, guards.Count)];
 
-                        BroadcastSystem.BroadcastSystem.ShowToPlayer(randomGuard, "[个人消息] 你是<color=blue>保安大队长</size>!", 6);
+                        BroadcastSystem.BroadcastSystem.ShowToPlayer(randomGuard, "[个人消息] 你是<color=blue>保安大队长</color>!", 6);
 
                         List<ItemType> BigGuardItems = new List<ItemType>()
                     {

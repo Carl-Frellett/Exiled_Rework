@@ -46,16 +46,6 @@ namespace RExiled.Events.Patches.Events.Player
 
             info.Amount = hurtingEv.Amount;
 
-            if (info.GetDamageType() == DamageTypes.Pocket)
-            {
-                if (info.Amount <= 0f) return true;
-            }
-
-            if (info.GetDamageType() == DamageTypes.Falldown)
-            {
-                if (info.Amount <= 0f) return true;
-            }
-
             if (info.Amount <= 0f)
                 return true;
 
