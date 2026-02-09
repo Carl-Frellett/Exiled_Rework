@@ -62,8 +62,6 @@ namespace RExiled.Events
             RExiled.API.Features.Player.UserIdsCache.Clear();
             RExiled.API.Features.Player.Dictionary.Clear();
 
-            ConfigManager.Reload();
-
             RoundSummary.RoundLock = false;
         }
         private void OnRoundStarted() => roundStartTime = DateTime.Now;
