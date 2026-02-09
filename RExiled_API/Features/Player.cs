@@ -69,9 +69,14 @@ namespace RExiled.API.Features
         public static IEnumerable<Player> List => Dictionary.Values;
 
         /// <summary>
-        /// 以玩家临时 Id（每局重置）为键的缓存字典。
+        /// 玩家临时ID
         /// </summary>
         public static Dictionary<int, Player> IdsCache { get; } = new Dictionary<int, Player>();
+
+        /// <summary>
+        /// 玩家UserId
+        /// </summary>
+        public static Dictionary<string, Player> UserIdsCache { get; } = new Dictionary<string, Player>();
 
         #endregion
 
@@ -100,6 +105,30 @@ namespace RExiled.API.Features
         #endregion
 
         #region 网络
+        /// <summary>
+        /// 获取玩家的UserId
+        /// </summary>
+        public string UserId => referenceHub.characterClassManager.UserId;
+
+        /// <summary>
+        /// 获取玩家的自定义User Id
+        /// </summary>
+        public string CustomUserId
+        {
+            get => ReferenceHub.characterClassManager.UserId2;
+            set => ReferenceHub.characterClassManager.UserId2 = value;
+        }
+        
+        /// <summary>
+        /// 获取玩家的RawUserId
+        /// </summary>
+        public string RawUserId => UserId.Substring(0, UserId.LastIndexOf('@'));
+
+        /// <summary>
+        /// 获取玩家的认证令牌
+        /// </summary>
+        public string AuthenticationToken => ReferenceHub.characterClassManager.AuthToken;
+
         /// <summary>
         /// 玩家是否已经加入
         /// </summary>

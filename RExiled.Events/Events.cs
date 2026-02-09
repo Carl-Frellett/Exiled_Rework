@@ -3,6 +3,7 @@ using MEC;
 using RExiled.API.Enums;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
+using RExiled.Loader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace RExiled.Events
             RExiled.Events.Handlers.Server.RoundEnded += OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
+            RExiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
 
             Patch();
             StartIdler();
@@ -49,11 +51,21 @@ namespace RExiled.Events
             RExiled.Events.Handlers.Server.RoundEnded -= OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundEndedOrRestarted;
             RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
+            RExiled.Events.Handlers.Server.WaitingForPlayers -= OnWaitingForPlayers;
 
             StopIdler();
             Unpatch();
         }
+        public void OnWaitingForPlayers()
+        {
+            RExiled.API.Features.Player.IdsCache.Clear();
+            RExiled.API.Features.Player.UserIdsCache.Clear();
+            RExiled.API.Features.Player.Dictionary.Clear();
 
+            ConfigManager.Reload();
+
+            RoundSummary.RoundLock = false;
+        }
         private void OnRoundStarted() => roundStartTime = DateTime.Now;
         private void OnRoundEndedOrRestarted() => roundStartTime = DateTime.MinValue;
         public static float GetRoundDuration()

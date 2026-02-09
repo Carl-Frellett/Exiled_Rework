@@ -222,7 +222,7 @@ namespace DreamPlugin.Game
 
             ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
 
-            BroadcastSystem.BroadcastSystem.ShowGlobal($"欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·怀旧服*</color>");
+            BroadcastSystem.BroadcastSystem.ShowGlobal($"欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·鸟之诗 怀旧服*</color>");
 
             ev.Player.RankName = string.Empty;
             Timing.CallDelayed(0.2f, () =>

@@ -146,9 +146,9 @@
     <Compile Include="Patches\Events\Player\RemoteAdminCommandPatch.cs" />
     <Compile Include="Patches\Events\Player\Shooting.cs" />
     <Compile Include="Patches\Events\Player\TeamRespawnPatch.cs" />
+    <Compile Include="Patches\Events\Player\WaitingForPlayers.cs" />
     <Compile Include="Patches\Events\Player\WarheadPanelInteractPatch.cs" />
     <Compile Include="Patches\Fix\DropAmmoBoxFix.cs" />
-    <Compile Include="Patches\Fix\PreAuthFix.cs" />
     <Compile Include="Patches\Events\Server\ServerCommandPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundEndedPatch.cs" />
     <Compile Include="Patches\Events\Server\RoundRestartedPatch.cs" />

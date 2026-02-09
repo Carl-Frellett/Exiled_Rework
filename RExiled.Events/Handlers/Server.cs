@@ -15,6 +15,10 @@ namespace RExiled.Events.Handlers
 
         public static event CustomEventHandler<ServerCommandExecutingEventArgs> ServerCommandExecuting;
 
+        public static event CustomEventHandler WaitingForPlayers;
+
+        public static void OnWaitingForPlayers() => WaitingForPlayers?.InvokeSafely();
+
         public static void OnTerminalCommandExecuting(ServerCommandExecutingEventArgs ev)=> ServerCommandExecuting.InvokeSafely(ev);
 
         public static void OnRoundEnded() => RoundEnded.InvokeSafely();

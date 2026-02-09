@@ -11,26 +11,30 @@ namespace RExiled.Events.Patches.Events.Player
         {
             try
             {
-                if (!__instance._playerInteractRateLimit.CanExecute() ||
-                    (__instance._hc.CufferId > 0 && !!__instance.CanDisarmedInteract))
+                if (!__instance._playerInteractRateLimit.CanExecute(true) ||
+                    (__instance._hc.CufferId > 0 && !__instance.CanDisarmedInteract))
+                {
                     return false;
+                }
 
-                var panelObj = GameObject.Find("OutsitePanelScript");
-                if (panelObj == null || !__instance.ChckDis(panelObj.transform.position))
+                GameObject panelObject = GameObject.Find("OutsitePanelScript");
+                if (panelObject == null || !__instance.ChckDis(panelObject.transform.position))
+                {
                     return false;
+                }
 
-                var hub = ReferenceHub.GetHub(__instance.gameObject);
-                var player = RExiled.API.Features.Player.Get(hub);
+                ReferenceHub hub = ReferenceHub.GetHub(__instance.gameObject);
+                RExiled.API.Features.Player player = RExiled.API.Features.Player.Get(hub);
 
                 var ev = new RExiled.Events.EventArgs.Player.WarheadPanelInteractingEventArgs(player);
                 RExiled.Events.Handlers.Player.OnWarheadPanelInteracting(ev);
 
                 if (ev.IsAllowed)
                 {
-                    panelObj.GetComponentInParent<AlphaWarheadOutsitePanel>().NetworkkeycardEntered = true;
+                    panelObject.GetComponentInParent<AlphaWarheadOutsitePanel>().NetworkkeycardEntered = true;
                 }
-
                 __instance.OnInteract();
+
                 return false;
             }
             catch (Exception ex)
