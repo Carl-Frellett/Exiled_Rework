@@ -29,43 +29,13 @@ namespace DreamPlugin.Badge
                     string json = File.ReadAllText(dataPath);
                     var loadedBadges = JsonConvert.DeserializeObject<List<BadgeAccount>>(json);
 
-                    bool needsUpgrade = false;
-
-                    foreach (var badge in loadedBadges)
-                    {
-                        if (badge.CreateTime == default(DateTime))
-                        {
-                            badge.CreateTime = DateTime.Now;
-                            badge.LastUpdateTime = DateTime.Now;
-
-                            if (badge.ExpirationMonths == 0)
-                            {
-                                badge.ExpirationMonths = 0;
-                            }
-
-                            needsUpgrade = true;
-                            Log.Info($"升级旧格式称号账号: {badge.Account} (设为永久)");
-                        }
-                    }
-
                     badges = loadedBadges
                         .Where(b => !b.IsExpired())
-                        .ToDictionary(b => b.Account, b => b);
+                        .ToDictionary(b => b.UserId, b => b);
 
-                    if (loadedBadges.Count != badges.Count || needsUpgrade)
-                    {
-                        SaveBadges();
-                        if (loadedBadges.Count != badges.Count)
-                        {
-                            Log.Info($"已清理 {loadedBadges.Count - badges.Count} 个过期称号账号");
-                        }
-                        if (needsUpgrade)
-                        {
-                            Log.Info("已升级旧格式称号数据");
-                        }
-                    }
+                    SaveBadges();
 
-                    Log.Info($"已加载 {badges.Count} 个称号账号");
+                    Log.Info($"已加载 {badges.Count} 个有效称号");
                 }
                 else
                 {
@@ -101,28 +71,24 @@ namespace DreamPlugin.Badge
             }
         }
 
-        public bool RegisterBadge(string account, string password, BadgeType type, string content, string color = null, int expirationMonths = 0)
+        public bool RegisterBadge(string userId, BadgeType type, string content, string color = null, int expirationMonths = 0)
         {
-            bool isUpdate = badges.ContainsKey(account);
-
+            bool isUpdate = badges.ContainsKey(userId);
             if (isUpdate)
             {
-                var existingBadge = badges[account];
-                existingBadge.Password = password;
-                existingBadge.BadgeType = type;
-                existingBadge.BadgeContent = content;
-                existingBadge.BadgeColor = color;
-                existingBadge.ExpirationMonths = expirationMonths;
-                existingBadge.LastUpdateTime = DateTime.Now;
-
-                Log.Info($"已更新称号账号: {account}, 有效期: {(expirationMonths == 0 ? "永久" : $"{expirationMonths}个月")}");
+                var existing = badges[userId];
+                existing.BadgeType = type;
+                existing.BadgeContent = content;
+                existing.BadgeColor = color;
+                existing.ExpirationMonths = expirationMonths;
+                existing.LastUpdateTime = DateTime.Now;
+                Log.Info($"更新称号: {userId}");
             }
             else
             {
                 var newBadge = new BadgeAccount
                 {
-                    Account = account,
-                    Password = password,
+                    UserId = userId,
                     BadgeType = type,
                     BadgeContent = content,
                     BadgeColor = color,
@@ -130,69 +96,47 @@ namespace DreamPlugin.Badge
                     CreateTime = DateTime.Now,
                     LastUpdateTime = DateTime.Now
                 };
-
-                badges[account] = newBadge;
-                Log.Info($"已创建新称号账号: {account}, 有效期: {(expirationMonths == 0 ? "永久" : $"{expirationMonths}个月")}");
+                badges[userId] = newBadge;
+                Log.Info($"创建新称号: {userId}");
             }
-
             SaveBadges();
             return true;
         }
 
-        public bool DeleteBadge(string account)
+        public bool DeleteBadge(string userId)
         {
-            if (!badges.ContainsKey(account))
-                return false;
-
-            badges.Remove(account);
+            if (!badges.ContainsKey(userId)) return false;
+            badges.Remove(userId);
             SaveBadges();
             return true;
         }
-
-        public BadgeAccount Login(Player player, string account, string password)
+        public void ApplyBadgeToPlayer(Player player)
         {
-            if (!badges.TryGetValue(account, out var badge) || badge.Password != password)
-                return null;
+            if (player == null || string.IsNullOrEmpty(player.UserId)) return;
 
-            if (badge.IsExpired())
+            if (badges.TryGetValue(player.UserId, out var badge) && !badge.IsExpired())
             {
-                Log.Info($"称号账号 {account} 已过期，自动删除");
-                badges.Remove(account);
-                SaveBadges();
-                return null;
+                ApplyBadgeDirectly(player, badge);
             }
-
-            if (playerSessions.ContainsKey(player))
+            else
             {
-                RemoveBadge(player);
+                CleanPlayerBadge(player);
             }
-
-            var session = new PlayerSession
-            {
-                CurrentBadge = badge,
-                IsLoggedIn = true,
-                LoginTime = DateTime.Now
-            };
-
-            playerSessions[player] = session;
-            ApplyBadge(player, badge);
-
-            badge.LastUpdateTime = DateTime.Now;
-            SaveBadges();
-
-            return badge;
         }
 
-        public bool IsPlayerLoggedIn(Player player)
+        public void CleanPlayerBadge(Player player)
         {
-            return playerSessions.ContainsKey(player) && playerSessions[player].IsLoggedIn;
-        }
+            if (player == null) return;
 
-        public BadgeAccount GetPlayerBadge(Player player)
-        {
-            return playerSessions.TryGetValue(player, out var session) ? session.CurrentBadge : null;
-        }
+            var rainbow = player.GameObject.GetComponent<RainbowTagController>();
+            var dynamic = player.GameObject.GetComponent<DynamicBadgeController>();
 
+            if (rainbow != null) UnityEngine.Object.Destroy(rainbow);
+            if (dynamic != null) UnityEngine.Object.Destroy(dynamic);
+
+            player.RankName = null;
+            player.RankColor = "default";
+        }
         public void ApplyBadgeDirectly(Player player, BadgeAccount badge)
         {
             if (badge == null) return;
@@ -205,13 +149,11 @@ namespace DreamPlugin.Badge
                     break;
                 case BadgeType.Rainbow:
                     player.RankName = badge.BadgeContent;
-                    // 彩虹称号需要控制器
                     var rainbowController = player.GameObject.AddComponent<RainbowTagController>();
                     rainbowController.Initialize(player, badge.RainbowColors);
                     break;
                 case BadgeType.SimpleDynamic:
                 case BadgeType.RainbowDynamic:
-                    // 动态称号需要控制器
                     var dynamicController = player.GameObject.AddComponent<DynamicBadgeController>();
                     dynamicController.Initialize(player, badge.BadgeContent, badge.BadgeColor ?? "red",
                         badge.BadgeType, badge.RainbowColors);
@@ -270,81 +212,36 @@ namespace DreamPlugin.Badge
 
         private void RemoveBadge(Player player)
         {
-            // 移除彩虹标签控制器
             var rainbowController = player.GameObject.GetComponent<RainbowTagController>();
             if (rainbowController != null)
                 UnityEngine.Object.Destroy(rainbowController);
 
-            // 移除动态称号控制器
             var dynamicController = player.GameObject.GetComponent<DynamicBadgeController>();
             if (dynamicController != null)
                 UnityEngine.Object.Destroy(dynamicController);
-
-            // 注意：不要在这里重置玩家的RankName和RankColor
-            // 因为单色称号玩家的称号可能会被错误重置
-            // 改为在各个控制器的OnDestroy中处理
         }
 
-        // 添加玩家断开连接时的清理方法
         public void OnPlayerLeft(Player player)
         {
-            if (playerSessions.ContainsKey(player))
+            if (!string.IsNullOrEmpty(player.UserId))
             {
-                // 在玩家离开时正确重置其称号
-                player.RankName = null;
-                player.RankColor = "default";
-                playerSessions.Remove(player);
+                CleanPlayerBadge(player);
             }
         }
 
-        // 新增方法：获取账号过期信息
-        public string GetAccountExpirationInfo(string account)
+        public string GetAccountExpirationInfo(string userId)
         {
-            if (!badges.TryGetValue(account, out var badge))
-                return "账号不存在";
+            if (!badges.TryGetValue(userId, out var badge))
+                return "无称号记录";
 
             if (badge.IsExpired())
-                return "已过期";
+                return "已过期（已自动清理）";
 
             if (badge.ExpirationMonths == 0)
-                return "永久";
+                return "永久有效";
 
-            var expirationDate = badge.GetExpirationDate();
-            var daysLeft = (expirationDate - DateTime.Now).Days;
-            return $"{daysLeft}天后过期 ({expirationDate:yyyy-MM-dd})";
-        }
-
-        // 新增方法：获取所有旧格式账号并升级
-        public int UpgradeLegacyBadges()
-        {
-            int upgradedCount = 0;
-
-            foreach (var badge in badges.Values)
-            {
-                // 如果创建时间为默认值，说明是旧格式数据
-                if (badge.CreateTime == default(DateTime))
-                {
-                    badge.CreateTime = DateTime.Now;
-                    badge.LastUpdateTime = DateTime.Now;
-
-                    // 旧数据默认设为永久
-                    if (badge.ExpirationMonths == 0)
-                    {
-                        badge.ExpirationMonths = 0; // 0表示永久
-                    }
-
-                    upgradedCount++;
-                    Log.Info($"升级旧格式称号账号: {badge.Account} (设为永久)");
-                }
-            }
-
-            if (upgradedCount > 0)
-            {
-                SaveBadges();
-                Log.Info($"已升级 {upgradedCount} 个旧格式称号账号");
-            }
-
-            return upgradedCount;
+            var daysLeft = (badge.GetExpirationDate() - DateTime.Now).Days;
+            return $"{daysLeft} 天后过期（{badge.GetExpirationDate():yyyy-MM-dd}）";
         }
     }
 }

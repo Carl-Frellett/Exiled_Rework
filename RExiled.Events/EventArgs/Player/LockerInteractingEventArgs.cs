@@ -1,26 +1,33 @@
 ﻿namespace RExiled.Events.EventArgs.Player
 {
-    public class LockerInteractingEventArgs : System.EventArgs
-    {
-        public RExiled.API.Features.Player Player { get; }
-        public global::Locker Locker { get; }
-        public global::LockerChamber Chamber { get; }
-        public int LockerId { get; }
-        public int ChamberNumber { get; }
-        public bool IsAllowed { get; set; } = true;
+    using System;
+    using RExiled.API.Features;
 
+    public class LockerInteractingEventArgs : EventArgs
+    {
         public LockerInteractingEventArgs(
-            RExiled.API.Features.Player player,
-            global::Locker locker,
-            global::LockerChamber chamber,
+            Player player,
+            Locker locker,
+            LockerChamber chamber,
             int lockerId,
-            int chamberNumber)
+            int chamberNumber,
+            bool hasPermission)
         {
             Player = player;
             Locker = locker;
             Chamber = chamber;
             LockerId = lockerId;
             ChamberNumber = chamberNumber;
+            HasPermission = hasPermission;
+            IsAllowed = hasPermission;
         }
+
+        public Player Player { get; }
+        public Locker Locker { get; }
+        public LockerChamber Chamber { get; }
+        public int LockerId { get; }
+        public int ChamberNumber { get; }
+        public bool HasPermission { get; }
+        public bool IsAllowed { get; set; }
     }
 }

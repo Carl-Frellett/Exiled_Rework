@@ -1,4 +1,5 @@
-﻿using MEC;
+﻿using DreamPlugin.Badge;
+using MEC;
 using Mirror;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
@@ -13,9 +14,6 @@ namespace DreamPlugin.Game
 
         private Dictionary<Player, Vector3> LastPos = new Dictionary<Player, Vector3>();
         private Dictionary<Player, float> KeepPosTime = new Dictionary<Player, float>();
-
-        private static readonly HashSet<int> _allocatedIds = new HashSet<int>();
-        private static readonly object _idLock = new object();
 
         public void RegisterEvents()
         {
@@ -187,15 +185,6 @@ namespace DreamPlugin.Game
             {
                 ev.Amount = 0.03f;
             }
-
-            if (ev.DamageType == DamageTypes.Usp && ev.Target.Team != Team.SCP && ev.Target != Plugin.plugin.SCP073.Scp073CurrentPlayer)
-            {
-                ev.Amount += new System.Random().Next(50, 120);
-            }
-            if (ev.DamageType == DamageTypes.MicroHid)
-            {
-                ev.Amount += new System.Random().Next(300, 900);
-            }
         }
         public void OnPlayerDied(DiedEventArgs ev)
         {
@@ -207,21 +196,6 @@ namespace DreamPlugin.Game
         }
         public void OnPlayerJoined(JoinedEventArgs ev)
         {
-            int newId;
-
-            lock (_idLock)
-            {
-                newId = 2;
-                while (_allocatedIds.Contains(newId))
-                {
-                    newId++;
-                }
-
-                _allocatedIds.Add(newId);
-            }
-
-            ev.Player.ReferenceHub.queryProcessor.NetworkPlayerId = newId;
-
             BroadcastSystem.BroadcastSystem.ShowGlobal($"欢迎<color=green>{ev.Player.Nickname}</color>加入<color=blue>*梦时镜·鸟之诗 怀旧服*</color>");
 
             ev.Player.RankName = string.Empty;
@@ -229,13 +203,11 @@ namespace DreamPlugin.Game
             {
                 ev.Player.RankName = string.Empty;
             });
+            Plugin.plugin.BadgeManager.ApplyBadgeToPlayer(ev.Player);
         }
         public void OnPlayerLeft(LeftEventArgs ev)
         {
-            lock (_idLock)
-            {
-                _allocatedIds.Remove(ev.Player.Id);
-            }
+            Plugin.plugin.BadgeManager.OnPlayerLeft(ev.Player);
         }
         public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
         {
@@ -372,12 +344,6 @@ namespace DreamPlugin.Game
                     if (!player.IsSCP) continue;
 
                     ProcessHealing(player);
-                }
-
-                var scp550Player = Plugin.plugin?.SCP550?.Scp550CurrentPlayer;
-                if (scp550Player != null && scp550Player.ReferenceHub != null)
-                {
-                    ProcessHealing(scp550Player);
                 }
 
                 yield return Timing.WaitForSeconds(1f);

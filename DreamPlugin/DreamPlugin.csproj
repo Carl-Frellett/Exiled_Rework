@@ -80,11 +80,15 @@
     <Compile Include="BroadcastSystem\Manager\PlayerBroadcastManager.cs" />
     <Compile Include="Game\CommandHandler.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="Game\CustomRole\CustomRole.cs" />
+    <Compile Include="Game\CustomRole\Extensions\RoleTypeExtensions.cs" />
+    <Compile Include="Game\CustomRole\Extensions\SpawnConditionType.cs" />
+    <Compile Include="Game\CustomRole\RoleSpawnManager.cs" />
     <Compile Include="Game\EventHandler.cs" />
     <Compile Include="Game\InfiniteAmmo.cs" />
     <Compile Include="Game\InventoryAccess.cs" />
-    <Compile Include="Game\PlayerRole\BigGuard.cs" />
     <Compile Include="Game\PlayerRole\SCP073.cs" />
+    <Compile Include="Game\PlayerRole\FatB.cs" />
     <Compile Include="Game\PlayerRole\SCP6000.cs" />
     <Compile Include="Game\PlayerRole\SCP550.cs" />
     <Compile Include="Plugin.cs" />

@@ -11,16 +11,12 @@ namespace DreamPlugin.Game
         {
             RExiled.Events.Handlers.Player.DoorInteracting += OnPlayerDoorInteract;
             RExiled.Events.Handlers.Player.LockerInteracting += OnPlayerLockerInteract;
-            RExiled.Events.Handlers.Player.GeneratorDoorOpening += OnGeneratorAccess;
-            RExiled.Events.Handlers.Player.WarheadPanelInteracting += OnActivatingWarheadPanel;
         }
 
         public void UnregisterEvents()
         {
             RExiled.Events.Handlers.Player.DoorInteracting -= OnPlayerDoorInteract;
             RExiled.Events.Handlers.Player.LockerInteracting -= OnPlayerLockerInteract;
-            RExiled.Events.Handlers.Player.GeneratorDoorOpening -= OnGeneratorAccess;
-            RExiled.Events.Handlers.Player.WarheadPanelInteracting -= OnActivatingWarheadPanel;
         }
         public void OnPlayerDoorInteract(DoorInteractingEventArgs ev)
         {
@@ -39,32 +35,6 @@ namespace DreamPlugin.Game
             if (ev.IsAllowed) return;
 
             ev.IsAllowed = HasPermission(ev.Player, ev.Chamber.accessToken);
-        }
-
-        public void OnGeneratorAccess(GeneratorDoorOpeningEventArgs ev)
-        {
-            if (ev.Player == null) return;
-
-            if (ev.Player.Side == Side.SCP) return;
-            if (ev.IsAllowed) return;
-            ev.IsAllowed = HasPermission(ev.Player, "ARMORY_LVL_2");
-        }
-
-        public void OnActivatingWarheadPanel(WarheadPanelInteractingEventArgs ev)
-        {
-            if (ev.Player == null) return;
-
-            ev.IsAllowed = false;
-
-            if (ev.Player.IsBypassModeEnabled)
-            {
-                ev.IsAllowed = true;
-                return;
-            }
-
-            if (ev.Player.Side == Side.SCP) return;
-
-            ev.IsAllowed = HasPermission(ev.Player, "CONT_LVL_3");
         }
 
         private bool HasPermission(Player player, string requested)

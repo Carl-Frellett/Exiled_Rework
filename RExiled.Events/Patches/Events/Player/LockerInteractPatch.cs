@@ -1,7 +1,12 @@
-﻿using HarmonyLib;
+﻿// LockerInteractPatch.cs
 
 namespace RExiled.Events.Patches.Events.Player
 {
+    using HarmonyLib;
+    using RExiled.API.Features;
+    using RExiled.Events.EventArgs.Player;
+    using System;
+
     [HarmonyPatch(typeof(PlayerInteract), nameof(PlayerInteract.CallCmdUseLocker))]
     internal static class LockerInteractPatch
     {
@@ -14,55 +19,72 @@ namespace RExiled.Events.Patches.Events.Player
                     return false;
 
                 var lockerManager = LockerManager.singleton;
-                if (lockerId < 0 || lockerId >= lockerManager.lockers.Length) return false;
+                if (lockerId < 0 || lockerId >= lockerManager.lockers.Length)
+                    return false;
 
                 var locker = lockerManager.lockers[lockerId];
                 if (!__instance.ChckDis(locker.gameObject.transform.position) ||
-                    !locker.supportsStandarizedAnimation) return false;
+                    !locker.supportsStandarizedAnimation)
+                    return false;
 
-                if (chamberNumber < 0 || chamberNumber >= locker.chambers.Length) return false;
+                if (chamberNumber < 0 || chamberNumber >= locker.chambers.Length)
+                    return false;
+
                 var chamber = locker.chambers[chamberNumber];
-                if (chamber.doorAnimator == null || !chamber.CooldownAtZero()) return false;
+                if (chamber.doorAnimator == null || !chamber.CooldownAtZero())
+                    return false;
 
                 chamber.SetCooldown();
 
+                string accessToken = chamber.accessToken;
+                var inventory = __instance._inv;
+                var currentItem = inventory.GetItemByID(inventory.curItem);
+                bool hasPermission = string.IsNullOrEmpty(accessToken) ||
+                                     (currentItem != null && currentItem.permissions.Contains(accessToken)) ||
+                                     __instance._sr.BypassMode;
+
                 var hub = ReferenceHub.GetHub(__instance.gameObject);
                 var player = RExiled.API.Features.Player.Get(hub);
+                if (player == null)
+                    return false;
 
-                var ev = new RExiled.Events.EventArgs.Player.LockerInteractingEventArgs(player, locker, chamber, lockerId, chamberNumber);
+                var ev = new LockerInteractingEventArgs(player, locker, chamber, lockerId, chamberNumber, hasPermission);
                 RExiled.Events.Handlers.Player.OnLockerInteracting(ev);
 
-                if (!ev.IsAllowed)
-                {
-                    lockerManager.RpcChangeMaterial(lockerId, chamberNumber, true);
-                    __instance.OnInteract();
-                    return false;
-                }
+                bool allow = ev.IsAllowed;
 
-                bool willOpen = (lockerManager.openLockers[lockerId] & (1 << chamberNumber)) == 0;
-                lockerManager.ModifyOpen(lockerId, chamberNumber, willOpen);
-                lockerManager.RpcDoSound(lockerId, chamberNumber, willOpen);
-
-                bool allClosed = true;
-                for (int i = 0; i < locker.chambers.Length; i++)
+                if (allow)
                 {
-                    if ((lockerManager.openLockers[lockerId] & (1 << i)) != 0)
+                    bool willOpen = (lockerManager.openLockers[lockerId] & (1 << chamberNumber)) == 0;
+                    lockerManager.ModifyOpen(lockerId, chamberNumber, willOpen);
+                    lockerManager.RpcDoSound(lockerId, chamberNumber, willOpen);
+
+                    bool allClosed = true;
+                    for (int i = 0; i < locker.chambers.Length; i++)
                     {
-                        allClosed = false;
-                        break;
+                        if ((lockerManager.openLockers[lockerId] & (1 << i)) != 0)
+                        {
+                            allClosed = false;
+                            break;
+                        }
+                    }
+                    locker.LockPickups(allClosed);
+
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        lockerManager.RpcChangeMaterial(lockerId, chamberNumber, false);
                     }
                 }
-                locker.LockPickups(allClosed);
-
-                if (!string.IsNullOrEmpty(chamber.accessToken))
+                else
                 {
-                    lockerManager.RpcChangeMaterial(lockerId, chamberNumber, false);
+                    // 拒绝时高亮材质（红色）
+                    lockerManager.RpcChangeMaterial(lockerId, chamberNumber, true);
                 }
 
                 __instance.OnInteract();
                 return false;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 RExiled.API.Features.Log.Error($"[RExiled] LockerInteractPatch error: {ex}");
                 return true;

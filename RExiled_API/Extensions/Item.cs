@@ -1,4 +1,5 @@
-﻿using RExiled.API.Features;
+﻿using Mirror;
+using RExiled.API.Features;
 using UnityEngine;
 
 namespace RExiled.API.Extensions
@@ -32,5 +33,22 @@ namespace RExiled.API.Extensions
             type == ItemType.KeycardGuard || type == ItemType.KeycardJanitor || type == ItemType.KeycardNTFCommander ||
             type == ItemType.KeycardNTFLieutenant || type == ItemType.KeycardO5 || type == ItemType.KeycardScientist ||
             type == ItemType.KeycardScientistMajor || type == ItemType.KeycardSeniorGuard || type == ItemType.KeycardZoneManager;
+
+        public static void SyncPickupSize(this Pickup pickup)
+        {
+            var pickupObject = pickup.gameObject;
+            NetworkIdentity identity = pickupObject.GetComponent<NetworkIdentity>();
+
+            ObjectDestroyMessage destroyMessage = new ObjectDestroyMessage();
+            destroyMessage.netId = identity.netId;
+
+            foreach (GameObject player in PlayerManager.players)
+            {
+                Mirror.NetworkConnection playerCon = player.GetComponent<NetworkIdentity>().connectionToClient;
+                playerCon.Send(destroyMessage, 0);
+                object[] parameters = new object[] { identity, playerCon };
+                typeof(NetworkServer).InvokeStaticMethod("SendSpawnMessage", parameters);
+            }
+        }
     }
 }

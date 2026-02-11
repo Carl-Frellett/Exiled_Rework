@@ -1,6 +1,7 @@
 ﻿using DreamPlugin.Badge;
 using MEC;
 using Mirror;
+using RExiled.API.Extensions;
 using RExiled.API.Features;
 using RExiled.Events.EventArgs.Player;
 using RExiled.Events.EventArgs.Server;
@@ -59,6 +60,15 @@ namespace DreamPlugin.Game
                     ev.Player.RemoteAdminMessage("已尝试清理所有地面物品。", true);
                 handled = true;
             }
+            else if (cmd == "setyttt")
+            {
+                if (ev.Player != null)
+                {
+                    ev.Player.SetNickname("我是测试大卡尔二二二");
+                    ev.Player.RemoteAdminMessage("成功修改", true);
+                }
+                handled = true;
+            }
             else if (cmd == "iamm t")
             {
                 InfiniteAmmo.IsInfiniteAmmoEnabled = true;
@@ -73,51 +83,158 @@ namespace DreamPlugin.Game
                     ev.Player.RemoteAdminMessage("已关闭 <b>真·无限子弹</b>", true);
                 handled = true;
             }
-            else if (cmd.StartsWith("stg "))
+            else if (cmd.StartsWith("spi ") || cmd.StartsWith("spim "))
             {
-                string[] args = cmd.Substring(4).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                bool isAtPlayer = cmd.StartsWith("spim ");
+                string subCmd = cmd.Substring(isAtPlayer ? 5 : 4).Trim();
+                string[] args = subCmd.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                if (args.Length != 2)
+                int expectedArgCount = isAtPlayer ? 6 : 8;
+                if (args.Length != expectedArgCount)
                 {
-                    ev.Player?.RemoteAdminMessage("<color=red>用法: stg <玩家ID> <权限组名称></color>", true);
+                    string usage = isAtPlayer
+                        ? "<color=red>用法: spim <物品ID> <数量> <玩家ID> <大小X> <大小Y> <大小Z></color>"
+                        : "<color=red>用法: spi <物品ID> <数量> <X> <Y> <Z> <大小X> <大小Y> <大小Z></color>";
+                    ev.Player?.RemoteAdminMessage(usage, true);
                     handled = true;
                     return;
                 }
 
-                string playerIdStr = args[0];
-                string groupName = args[1];
-
-                Player target = null;
-                if (int.TryParse(playerIdStr, out int playerId))
+                if (!int.TryParse(args[0], out int itemId) || !Enum.IsDefined(typeof(ItemType), itemId))
                 {
-                    target = Player.Get(playerId);
+                    ev.Player?.RemoteAdminMessage("<color=red>无效的物品ID。</color>", true);
+                    handled = true;
+                    return;
                 }
-
-                if (target == null)
+                if (!int.TryParse(args[1], out int amount) || amount <= 0)
                 {
-                    ev.Player?.RemoteAdminMessage($"<color=red>未找到 ID 为 {playerIdStr} 的玩家。</color>", true);
+                    ev.Player?.RemoteAdminMessage("<color=red>数量必须是正整数。</color>", true);
                     handled = true;
                     return;
                 }
 
-                var hub = target.ReferenceHub;
-                if (hub == null)
+                Vector3 spawnPosition;
+                if (isAtPlayer)
                 {
-                    ev.Player?.RemoteAdminMessage("<color=red>无法获取目标玩家的 Hub。</color>", true);
+                    if (!int.TryParse(args[2], out int playerId))
+                    {
+                        ev.Player?.RemoteAdminMessage("<color=red>玩家ID必须是整数。</color>", true);
+                        handled = true;
+                        return;
+                    }
+
+                    Player targetPlayer = Player.Get(playerId);
+                    if (targetPlayer == null)
+                    {
+                        ev.Player?.RemoteAdminMessage($"<color=red>未找到ID为 {playerId} 的有效玩家。</color>", true);
+                        handled = true;
+                        return;
+                    }
+
+                    spawnPosition = targetPlayer.Position;
+                }
+                else
+                {
+                    if (!float.TryParse(args[2], out float x) ||
+                        !float.TryParse(args[3], out float y) ||
+                        !float.TryParse(args[4], out float z))
+                    {
+                        ev.Player?.RemoteAdminMessage("<color=red>位置坐标必须是有效数字。</color>", true);
+                        handled = true;
+                        return;
+                    }
+                    spawnPosition = new Vector3(x, y, z);
+                }
+
+                if (!float.TryParse(args[isAtPlayer ? 3 : 5], out float scaleX) ||
+                    !float.TryParse(args[isAtPlayer ? 4 : 6], out float scaleY) ||
+                    !float.TryParse(args[isAtPlayer ? 5 : 7], out float scaleZ))
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>缩放参数必须是有效数字。</color>", true);
                     handled = true;
                     return;
                 }
+
+                Vector3 scale = new Vector3(scaleX, scaleY, scaleZ);
 
                 try
                 {
-                    target?.SetGroup(target?.GameObject, groupName);
-                    string successMsg = $"已将玩家 <b>{target.Nickname}</b> 的权限组设置为 <b>{groupName}</b>";
-                    ev.Player?.RemoteAdminMessage(successMsg, true);
-                    target.RemoteAdminMessage($"你的权限组已被设置为 <b>{groupName}</b>", true);
+                    for (int i = 0; i < amount; i++)
+                    {
+                        Pickup pickup = ((ItemType)itemId).Spawn(30f, spawnPosition);
+                        if (pickup != null)
+                        {
+                            pickup.transform.localScale = scale;
+
+                            pickup.SyncPickupSize();
+                        }
+                    }
+
+                    string itemName = Enum.GetName(typeof(ItemType), (ItemType)itemId) ?? "未知物品";
+                    string msg = isAtPlayer
+                        ? $"已在玩家 <b>{Player.Get(int.Parse(args[2])).Nickname}</b> 位置生成 <b>{amount}x {itemName}</b>（缩放: {scale}）"
+                        : $"已在位置 <b>{spawnPosition:0.##}</b> 生成 <b>{amount}x {itemName}</b>（缩放: {scale}）";
+                    ev.Player?.RemoteAdminMessage(msg, true);
                 }
                 catch (Exception ex)
                 {
-                    ev.Player?.RemoteAdminMessage($"<color=red>设置权限组失败: {ex.Message}</color>", true);
+                    ev.Player?.RemoteAdminMessage($"<color=red>生成物品时出错: {ex.Message}</color>", true);
+                }
+
+                handled = true;
+            }
+            else if (cmd.StartsWith("spl "))
+            {
+                string subCmd = cmd.Substring(4).Trim();
+                string[] args = subCmd.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (args.Length != 4)
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>用法: spl <玩家ID> <大小X> <大小Y> <大小Z></color>", true);
+                    handled = true;
+                    return;
+                }
+
+                if (!int.TryParse(args[0], out int playerId))
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>玩家ID必须是整数。</color>", true);
+                    handled = true;
+                    return;
+                }
+
+                Player targetPlayer = Player.Get(playerId);
+                if (targetPlayer == null)
+                {
+                    ev.Player?.RemoteAdminMessage($"<color=red>未找到ID为 {playerId} 的有效玩家。</color>", true);
+                    handled = true;
+                    return;
+                }
+
+                if (!float.TryParse(args[1], out float x) ||
+                    !float.TryParse(args[2], out float y) ||
+                    !float.TryParse(args[3], out float z))
+                {
+                    ev.Player?.RemoteAdminMessage("<color=red>缩放参数必须是有效数字。</color>", true);
+                    handled = true;
+                    return;
+                }
+
+                const float MAX_SCALE = 10f;
+                const float MIN_SCALE = 0.1f;
+
+                x = Mathf.Clamp(x, MIN_SCALE, MAX_SCALE);
+                y = Mathf.Clamp(y, MIN_SCALE, MAX_SCALE);
+                z = Mathf.Clamp(z, MIN_SCALE, MAX_SCALE);
+
+                try
+                {
+                    targetPlayer.SetScale(x, y, z);
+                    ev.Player?.RemoteAdminMessage(
+                        $"已将玩家 <b>{targetPlayer.Nickname}</b> 的体积设置为 <b>({x:0.##}, {y:0.##}, {z:0.##})</b>", true);
+                }
+                catch (Exception ex)
+                {
+                    ev.Player?.RemoteAdminMessage($"<color=red>设置玩家体积时出错: {ex.Message}</color>", true);
                 }
 
                 handled = true;
@@ -188,12 +305,6 @@ namespace DreamPlugin.Game
                 return;
             }
 
-            if (cmd.StartsWith("bag "))
-            {
-                HandleBadgeCommand(ev);
-                return;
-            }
-
             if (cmd.StartsWith("killme") || cmd.StartsWith("kl") || cmd.StartsWith("自杀"))
             {
                 if (ev.Player.IsSCP)
@@ -236,11 +347,6 @@ namespace DreamPlugin.Game
 
             RoleType role = player.Role;
 
-            if (player == DreamPlugin.Plugin.plugin.SCP073.Scp073CurrentPlayer)
-            {
-                return LogicalTeam.Scp;
-            }
-
             if (role == RoleType.None || role == RoleType.Spectator || role == RoleType.Tutorial)
             {
                 return LogicalTeam.None;
@@ -275,168 +381,6 @@ namespace DreamPlugin.Game
             }
 
             return LogicalTeam.None;
-        }
-        private void HandleBadgeCommand(PlayerCommandExecutingEventArgs ev)
-        {
-            var args = ev.Command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var player = ev.Player;
-
-            if (args.Length == 1)
-            {
-                player.SendConsoleMessage("用法: bag <账号> <密码> 或 bag <子命令>", "red");
-                return;
-            }
-
-            string subCommand = args[1].ToLower();
-            var badgeManager = Plugin.plugin.BadgeManager;
-            string adminPassword = Plugin.plugin.Config.AdminPwd;
-
-            switch (subCommand)
-            {
-                case "reg":
-                case "register":
-                    HandleRegister(player, args, adminPassword);
-                    break;
-
-                case "del":
-                case "delete":
-                    HandleDelete(player, args, adminPassword);
-                    break;
-
-                case "login":
-                case "log":
-                    if (args.Length >= 4)
-                        HandleLogin(player, args[2], args[3]);
-                    else
-                        player.SendConsoleMessage("用法: bag login <账号> <密码>", "red");
-                    break;
-
-                case "info":
-                    if (args.Length >= 3)
-                        HandleInfo(player, args[2]);
-                    else
-                        player.SendConsoleMessage("用法: bag info <账号>", "red");
-                    break;
-
-                default:
-                    if (args.Length >= 3)
-                    {
-                        HandleLogin(player, args[1], args[2]);
-                    }
-                    else
-                    {
-                        player.SendConsoleMessage("用法: bag <账号> <密码> 或 bag <子命令>", "red");
-                    }
-                    break;
-            }
-        }
-
-        private void HandleRegister(RExiled.API.Features.Player player, string[] args, string adminPassword)
-        {
-            if (args.Length < 8)
-            {
-                string masked = string.IsNullOrEmpty(adminPassword) ? "未设置" :
-                    adminPassword.Length <= 2 ? "***" : adminPassword.Substring(0, 2) + new string('*', adminPassword.Length - 2);
-
-                player.SendConsoleMessage(
-                    "\n用法: bag reg <管理员密码> <账号> <密码> <类型> <月数> <内容> [颜色]\n" +
-                    "类型: sr(单色), rr(彩色), sdr(单色动态), rdr(彩色动态)\n" +
-                    $"当前管理员密码: {masked}", "yellow");
-                return;
-            }
-
-            string inputAdminPwd = args[2];
-            string account = args[3];
-            string password = args[4];
-            string typeStr = args[5].ToLower();
-            string monthStr = args[6].ToLower();
-            string content = args[7];
-            string color = args.Length > 8 ? args[8] : null;
-
-            if (inputAdminPwd != adminPassword)
-            {
-                player.SendConsoleMessage("管理员密码错误，注册失败", "red");
-                return;
-            }
-
-            int expirationMonths = 0;
-            if (monthStr != "all")
-            {
-                if (!int.TryParse(monthStr, out expirationMonths) || expirationMonths <= 0)
-                {
-                    player.SendConsoleMessage("月数必须为正整数或'all'（永久）", "red");
-                    return;
-                }
-            }
-
-            BadgeType badgeType;
-            switch (typeStr)
-            {
-                case "sr": badgeType = BadgeType.Simple; break;
-                case "rr": badgeType = BadgeType.Rainbow; break;
-                case "sdr": badgeType = BadgeType.SimpleDynamic; break;
-                case "rdr": badgeType = BadgeType.RainbowDynamic; break;
-                default:
-                    player.SendConsoleMessage("无效的称号类型! 可用: sr, rr, sdr, rdr", "red");
-                    return;
-            }
-
-            if (Plugin.plugin.BadgeManager.RegisterBadge(account, password, badgeType, content, color, expirationMonths))
-            {
-                string expireInfo = expirationMonths == 0 ? "永久" : $"{expirationMonths}个月";
-                player.SendConsoleMessage($"称号账号 {account} 注册成功! 有效期: {expireInfo}", "green");
-            }
-            else
-            {
-                player.SendConsoleMessage("注册失败", "red");
-            }
-        }
-
-        private void HandleDelete(RExiled.API.Features.Player player, string[] args, string adminPassword)
-        {
-            if (args.Length < 4)
-            {
-                player.SendConsoleMessage("用法: bag del <管理员密码> <账号>", "red");
-                return;
-            }
-
-            string inputAdminPwd = args[2];
-            string account = args[3];
-
-            if (inputAdminPwd != adminPassword)
-            {
-                player.SendConsoleMessage("管理员密码错误，删除失败", "red");
-                return;
-            }
-
-            if (Plugin.plugin.BadgeManager.DeleteBadge(account))
-            {
-                player.SendConsoleMessage($"称号账号 {account} 删除成功!", "green");
-            }
-            else
-            {
-                player.SendConsoleMessage("删除失败，账号不存在", "red");
-            }
-        }
-
-        private void HandleLogin(RExiled.API.Features.Player player, string account, string password)
-        {
-            var badge = Plugin.plugin.BadgeManager.Login(player, account, password);
-            if (badge != null)
-            {
-                string expireInfo = badge.ExpirationMonths == 0 ? "永久" : $"{badge.ExpirationMonths}个月";
-                player.SendConsoleMessage($"登录成功! 有效期: {expireInfo}。请务必妥善保管账号密码", "green");
-            }
-            else
-            {
-                player.SendConsoleMessage("登录失败，账号或密码错误，或账号已过期", "red");
-            }
-        }
-
-        private void HandleInfo(RExiled.API.Features.Player player, string account)
-        {
-            string info = Plugin.plugin.BadgeManager.GetAccountExpirationInfo(account);
-            player.SendConsoleMessage($"账号 {account} 的状态: {info}", "white");
         }
 
         private void CleanCorpsesNow()

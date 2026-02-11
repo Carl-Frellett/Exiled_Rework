@@ -1,7 +1,8 @@
 ﻿using DreamPlugin.Badge;
 using DreamPlugin.Game;
-using DreamPlugin.Game.PlayerRole;
+using DreamPlugin.Game.CustomRole;
 using RExiled.API.Features;
+using RExiled.Events.EventArgs.Player;
 
 namespace DreamPlugin
 {
@@ -15,11 +16,7 @@ namespace DreamPlugin
         private CommandHandler CommandHandler = new CommandHandler();
         private EventHandler EventHandler = new EventHandler();
         private InfiniteAmmo InfiniteAmmo = new InfiniteAmmo();
-        private BigGuard BigGuard = new BigGuard();
         private InventoryAccess InventoryAccess = new InventoryAccess();
-        public SCP073 SCP073 = new SCP073();
-        public SCP550 SCP550 = new SCP550();
-        public SCP6000 SCP6000 = new SCP6000();
 
         public BadgeManager BadgeManager;
         private WebServer _webServer;
@@ -31,10 +28,6 @@ namespace DreamPlugin
             CommandHandler.RegisterEvents();
             EventHandler.RegisterEvents();
             InfiniteAmmo.RegisterEvents();
-            BigGuard.RegisterEvents();
-            SCP073.RegisterEvents();
-            SCP550.RegisterEvents();
-            SCP6000.RegisterEvents();
             InventoryAccess.RegisterEvents();
 
             BadgeManager = new BadgeManager();
@@ -42,24 +35,45 @@ namespace DreamPlugin
 
             _webServer = new WebServer();
             _webServer.Start();
-        }
 
+            RoleSpawnManager.Register(new Scp6000Role());
+            RoleSpawnManager.Register(new Scp550Role());
+            RoleSpawnManager.Register(new Scp073Role());
+            RoleSpawnManager.Register(new FatBRole());
+
+            // 注册事件
+            RExiled.Events.Handlers.Server.RoundStarted += RoleSpawnManager.OnRoundStarted;
+            RExiled.Events.Handlers.Player.SpawnedTeam += RoleSpawnManager.OnSpawnedTeam;
+            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting += OnRACommand;
+        }
+        private void OnRACommand(RemoteAdminCommandExecutingEventArgs ev)
+        {
+            if (ev.Command.StartsWith("sp"))
+            {
+                string name = ev.Command.Substring(2);
+                if (RoleSpawnManager.TrySpawnByCommand(name, ev.Player))
+                {
+                    ev.IsAllowed = false;
+                }
+            }
+        }
         public override void OnDisabled()
         {
             base.OnDisabled();
             CommandHandler.UnregisterEvents();
             EventHandler.UnregisterEvents();
             InfiniteAmmo.UnregisterEvents();
-            BigGuard.UnregisterEvents();
-            SCP073.UnregisterEvents();
-            SCP550.UnregisterEvents();
-            SCP6000.UnregisterEvents();
             InventoryAccess.UnregisterEvents();
 
             BadgeManager.SaveBadges();
 
             _webServer?.Dispose();
             _webServer = null;
+
+            RoleSpawnManager.UnregisterAll();
+            RExiled.Events.Handlers.Server.RoundStarted -= RoleSpawnManager.OnRoundStarted;
+            RExiled.Events.Handlers.Player.SpawnedTeam -= RoleSpawnManager.OnSpawnedTeam;
+            RExiled.Events.Handlers.Player.RemoteAdminCommandExecuting -= OnRACommand;
         }
     }
 }

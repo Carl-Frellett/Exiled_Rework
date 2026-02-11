@@ -152,21 +152,10 @@ namespace DreamPlugin.Badge.Controller
         void OnDestroy()
         {
             StopAllCoroutines();
-
             if (player != null && player.GameObject != null)
             {
-                var badgeManager = Plugin.plugin.BadgeManager;
-                var currentBadge = badgeManager.GetPlayerBadge(player);
-
-                if (currentBadge == null || currentBadge.BadgeType == BadgeType.SimpleDynamic || currentBadge.BadgeType == BadgeType.RainbowDynamic)
-                {
-                    player.RankName = null;
-                    player.RankColor = "default";
-                }
-                else
-                {
-                    badgeManager.ApplyBadgeDirectly(player, currentBadge);
-                }
+                player.RankName = null;
+                player.RankColor = string.Empty;
             }
         }
     }

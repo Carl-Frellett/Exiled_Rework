@@ -170,6 +170,21 @@ namespace RExiled.API.Features
                 BlinkTag();
             }
         }
+
+        /// <summary>
+        /// 修改玩家的名称
+        /// </summary>
+        public void SetNickname(string nickname)
+        {
+            ReferenceHub.nicknameSync.Network_myNickSync = nickname;
+            ReferenceHub.nicknameSync.MyNick = nickname;
+            ReferenceHub.nicknameSync._myNickSync = nickname;
+            MEC.Timing.RunCoroutine(BlinkTag());
+        }
+
+        /// <summary>
+        /// 设置玩家Badge的颜色
+        /// </summary>
         public string RankColor
         {
             get => ReferenceHub.serverRoles.NetworkMyColor;
@@ -180,6 +195,9 @@ namespace RExiled.API.Features
             }
         }
 
+        /// <summary>
+        /// 设置玩家的Badge的名称
+        /// </summary>
         public string RankName
         {
             get => ReferenceHub.serverRoles.NetworkMyText;
@@ -325,6 +343,24 @@ namespace RExiled.API.Features
                 }
             }
         }
+
+        /// <summary>
+        /// 修改玩家的体积
+        /// </summary>
+        public void SetScale(float x, float y, float z)
+        {
+            try
+            {
+                ReferenceHub.transform.localScale = new Vector3(x, y, z);
+
+                foreach (ReferenceHub target in ReferenceHub.Hubs.Values.Where(h => !h.characterClassManager.IsHost))
+                    Server.SendSpawnMessage?.Invoke(null, new object[] { ReferenceHub.GetComponent<NetworkIdentity>(), target.GetConnection() });
+            }
+            catch (Exception exception)
+            {
+                Log.Error($"SetScale error: {exception}");
+            }
+        }
         #endregion
 
         #region 管理员
@@ -367,6 +403,8 @@ namespace RExiled.API.Features
             yield return Timing.WaitForOneFrame;
 
             ShowTag();
+
+            yield return Timing.KillCoroutines();
         }
 
         /// <summary>

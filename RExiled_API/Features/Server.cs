@@ -51,8 +51,8 @@ namespace RExiled.API.Features
                 if (sendSpawnMessage == null)
                 {
                     sendSpawnMessage = typeof(NetworkServer).GetMethod(
-                        "SendSpawnMessage",
-                        BindingFlags.NonPublic | BindingFlags.Static);
+                        "SendSpawnMessage", BindingFlags.Instance | BindingFlags.InvokeMethod
+                        | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public);
                 }
 
                 return sendSpawnMessage;

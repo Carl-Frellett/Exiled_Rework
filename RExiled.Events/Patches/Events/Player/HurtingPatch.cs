@@ -9,10 +9,14 @@ namespace RExiled.Events.Patches.Events.Player
     internal class HurtingPatch
     {
         internal static readonly HashSet<int> DeathProcessing = new HashSet<int>();
-
         public static bool Prefix(ref PlayerStats.HitInfo info, GameObject go)
         {
             if (go == null) return true;
+
+            if (info.GetDamageType() == DamageTypes.Pocket)
+            {
+                return true;
+            }
 
             RExiled.API.Features.Player target = RExiled.API.Features.Player.Get(go);
             if (target == null) return true;
@@ -45,7 +49,6 @@ namespace RExiled.Events.Patches.Events.Player
                 return false;
 
             info.Amount = hurtingEv.Amount;
-
             if (info.Amount <= 0f)
                 return true;
 

@@ -7,6 +7,8 @@ namespace RExiled.API.Extensions
 {
     public static class NetworkConnection
     {
+        public static Mirror.NetworkConnection GetConnection(this ReferenceHub hub) => hub.scp079PlayerScript.connectionToClient;
+
         public static GameObject GetPlayerObject(this Mirror.NetworkConnection conn)
         {
             try
