@@ -17,26 +17,26 @@ namespace DreamPlugin.Game
 
         public void RegisterEvents()
         {
-            RExiled.Events.Handlers.Player.ChangedRole += OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined += OnPlayerJoined;
             RExiled.Events.Handlers.Player.Left += OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted += OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted += OnRoundRestarting;
             RExiled.Events.Handlers.Player.Hurting += OnPlayerHurting;
             RExiled.Events.Handlers.Player.Died += OnPlayerDied;
+            RExiled.Events.Handlers.Player.SpawnedTeam += OnSpawnTeam;
 
             SCPHealthCoroutine = Timing.RunCoroutine(SCPHealth());
         }
 
         public void UnregisterEvents()
         {
-            RExiled.Events.Handlers.Player.ChangedRole -= OnPlayerChangedRole;
             RExiled.Events.Handlers.Player.Joined -= OnPlayerJoined;
             RExiled.Events.Handlers.Player.Left -= OnPlayerLeft;
             RExiled.Events.Handlers.Server.RoundStarted -= OnRoundStarted;
             RExiled.Events.Handlers.Server.RoundRestarted -= OnRoundRestarting;
             RExiled.Events.Handlers.Player.Hurting -= OnPlayerHurting;
             RExiled.Events.Handlers.Player.Died -= OnPlayerDied;
+            RExiled.Events.Handlers.Player.SpawnedTeam -= OnSpawnTeam;
         }
 
         #region 清理
@@ -179,11 +179,31 @@ namespace DreamPlugin.Game
         {
             StopCleanup();
         }
+
+        public void OnSpawnTeam(SpawnedTeamEventArgs ev)
+        {
+            var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+
+            foreach (var pickup in pickups)
+            {
+                if (pickup == null || pickup.gameObject == null)
+                    continue;
+
+                if (pickup.Networkinfo.itemId == ItemType.WeaponManagerTablet || pickup.Networkinfo.itemId == ItemType.Disarmer || pickup.Networkinfo.itemId == ItemType.Radio)
+                {
+                    NetworkServer.Destroy(pickup.gameObject);
+                }
+            }
+        }
         public void OnPlayerHurting(HurtingEventArgs ev)
         {
             if (ev.DamageType == DamageTypes.Scp207)
             {
                 ev.Amount = 0.03f;
+            }
+            if (ev.DamageType == DamageTypes.Scp939)
+            {
+                ev.Amount = 80;
             }
         }
         public void OnPlayerDied(DiedEventArgs ev)
@@ -208,110 +228,6 @@ namespace DreamPlugin.Game
         public void OnPlayerLeft(LeftEventArgs ev)
         {
             Plugin.plugin.BadgeManager.OnPlayerLeft(ev.Player);
-        }
-        public void OnPlayerChangedRole(ChangedRoleEventArgs ev)
-        {
-            List<ItemType> Cld = new List<ItemType>()
-            {
-                ItemType.KeycardJanitor,
-                ItemType.Adrenaline
-            };
-
-            List<ItemType> Slt = new List<ItemType>()
-            {
-                ItemType.KeycardScientist,
-                ItemType.Adrenaline,
-                ItemType.Painkillers
-            };
-
-            List<ItemType> CI = new List<ItemType>()
-            {
-                ItemType.GunLogicer,
-                ItemType.GunUSP,
-                ItemType.KeycardChaosInsurgency,
-                ItemType.WeaponManagerTablet,
-                ItemType.Medkit,
-                ItemType.Painkillers,
-                ItemType.GrenadeFrag,
-                ItemType.GrenadeFlash,
-            };
-
-            List<ItemType> Ntc = new List<ItemType>()
-            {
-                ItemType.GunE11SR,
-                ItemType.GunUSP,
-                ItemType.KeycardNTFCommander,
-                ItemType.WeaponManagerTablet,
-                ItemType.Radio,
-                ItemType.Disarmer,
-                ItemType.Medkit,
-                ItemType.GrenadeFrag,
-            };
-
-            List<ItemType> Ntct = new List<ItemType>()
-            {
-                ItemType.GunProject90,
-                ItemType.GunCOM15,
-                ItemType.KeycardNTFLieutenant,
-                ItemType.WeaponManagerTablet,
-                ItemType.Radio,
-                ItemType.Disarmer,
-                ItemType.Medkit,
-            };
-
-            List<ItemType> ntl = new List<ItemType>()
-            {
-                ItemType.GunE11SR,
-                ItemType.GunUSP,
-                ItemType.KeycardNTFLieutenant,
-                ItemType.WeaponManagerTablet,
-                ItemType.Radio,
-                ItemType.Disarmer,
-                ItemType.Medkit,
-                ItemType.GrenadeFrag,
-            };
-
-            List<ItemType> fg = new List<ItemType>()
-            {
-                ItemType.GunMP7,
-                ItemType.KeycardGuard,
-                ItemType.WeaponManagerTablet,
-                ItemType.Radio,
-                ItemType.Disarmer,
-                ItemType.Medkit,
-                ItemType.GrenadeFlash,
-            };
-
-            Timing.CallDelayed(0.5f, () =>
-            {
-                switch (ev.NewRole)
-                {
-                    case RoleType.ClassD:
-                        ev.Player.ResetInventory(Cld);
-                        break;
-                    case RoleType.Scientist:
-                        ev.Player.ResetInventory(Slt);
-                        break;
-                    case RoleType.ChaosInsurgency:
-                        ev.Player.ResetInventory(CI);
-                        break;
-                    case RoleType.NtfCommander:
-                        ev.Player.ResetInventory(Ntc);
-                        break;
-                    case RoleType.NtfCadet:
-                        ev.Player.ResetInventory(Ntct);
-                        break;
-                    case RoleType.NtfLieutenant:
-                        ev.Player.ResetInventory(ntl);
-                        break;
-                    case RoleType.NtfScientist:
-                        ev.Player.ResetInventory(ntl);
-                        break;
-                    case RoleType.FacilityGuard:
-                        ev.Player.ResetInventory(fg);
-                        break;
-                }
-            });
         }
         private void CleanAmmoPickups()
         {

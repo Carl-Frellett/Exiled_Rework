@@ -1,4 +1,4 @@
-﻿namespace DreamPlugin.Game.CustomRole.Extensions
+﻿namespace DreamPlugin.Game.RCAM.Extensions
 {
     public static class RoleTypeExtensions
     {

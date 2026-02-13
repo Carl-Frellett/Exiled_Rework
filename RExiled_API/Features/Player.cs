@@ -177,8 +177,6 @@ namespace RExiled.API.Features
         public void SetNickname(string nickname)
         {
             ReferenceHub.nicknameSync.Network_myNickSync = nickname;
-            ReferenceHub.nicknameSync.MyNick = nickname;
-            ReferenceHub.nicknameSync._myNickSync = nickname;
             MEC.Timing.RunCoroutine(BlinkTag());
         }
 
@@ -415,7 +413,7 @@ namespace RExiled.API.Features
         /// <summary>
         /// 显示Tag
         /// </summary>
-        private void ShowTag() => ReferenceHub.characterClassManager.CallCmdRequestShowTag(true);
+        private void ShowTag() => ReferenceHub.characterClassManager.CallCmdRequestShowTag(false);
 
         /// <summary>
         /// 封禁这名玩家
